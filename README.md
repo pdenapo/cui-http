@@ -47,6 +47,42 @@ api-tester/
 git clone --recurse-submodules https://github.com/pdenapo/cui-http.git
 ```
 
+## Prerequisites
+
+### Linux (Arch)
+```sh
+sudo pacman -S base-devel cmake ninja ldc sqlite curl libx11 libglvnd
+```
+### Linux (Debian / Ubuntu)
+```sh
+sudo apt-get install -y build-essential cmake ninja-build ldc libsqlite3-dev libcurl4-openssl-dev libx11-dev libgl-dev
+```
+### Windows
+- [LDC](https://github.com/ldc-developers/ldc/releases) (add to PATH)
+- CMake + Ninja (`choco install cmake ninja`)
+- SQLite and libcurl dev libraries (vcpkg or prebuilt)
+- Visual Studio Build Tools (MSVC) or MinGW
+### macOS
+```sh
+brew install cmake ninja ldc sqlite curl
+```
+Xcode Command Line Tools are required for the compiler.
+
+## Which frontend for Wayland?
+
+On Wayland, prefer a backend with native Wayland support:
+
+- **Recommended: `glfw`** — GLFW 3.4+ talks to Wayland directly (no XWayland).
+- **`sdl2`** — also native Wayland (SDL2 ≥ 2.24).
+- **`x11`** — works through XWayland (fine, but not native; default of `build_x11.sh`).
+
+Build for Wayland with:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=glfw
+cmake --build build -j 2
+```
+
 ## Build
 
 Do **not** use dub to build or link the backend — CMake invokes `ldc2 -lib`
