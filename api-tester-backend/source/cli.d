@@ -116,7 +116,13 @@ private bool is_method(const string s) {
 
 private string select_db(string explicitPath) {
     if (explicitPath.length) return explicitPath;
-    return environment.get("CUI_HTTP_DB", "requests.db");
+    import std.process : environment;
+    auto env = environment.get("CUI_HTTP_DB", "");
+    if (env.length) return env;
+    auto p = default_db_path();
+    string s = to!string(p);
+    free_string(p);
+    return s;
 }
 
 /* extern(C) parameters take const char*: cast off the immutability the D

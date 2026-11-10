@@ -26,6 +26,7 @@ import std.datetime.systime : Clock;
 import std.net.curl : HTTP;
 import etc.c.curl : CurlReadFunc;
 import d2sqlite3;
+import std.array : join;
 import std.conv : to;
 
 /* ------------------------------------------------------------------------ */
@@ -51,6 +52,7 @@ extern (C) struct HttpResponse {
     double latency_ms;
     char* body;    /* malloc'ed, NUL terminated; freed with free_response */
     long body_len; /* bytes without the NUL */
+    char* headers; /* malloc'ed response headers, "Key: value\\n" per line, or NULL */
 }
 
 /* One history row, as returned by history_row(). Strings are malloc'ed. */
@@ -61,6 +63,8 @@ extern (C) struct HistoryRow {
     char* created_at;
     int status;
     double latency_ms;
+    char* req_headers; /* malloc'ed, "Key: value\\n" per line, or NULL */
+    char* res_headers; /* malloc'ed, "Key: value\\n" per line, or NULL */
 }
 
 /* ------------------------------------------------------------------------ */
@@ -90,6 +94,8 @@ private struct HistoryRec {
     string created_at;
     int status;
     double latency_ms;
+    string req_headers;
+    string res_headers;
 }
 
 /* Copy a GC string into malloc'ed, NUL terminated C memory. */
@@ -119,8 +125,13 @@ extern (C) int init_db(const char* c_db_path) {
                        req_body TEXT,
                        status INTEGER,
                        latency_ms REAL,
-                       res_size INTEGER)");
+                       res_size INTEGER,
+                       req_headers TEXT,
+                       res_headers TEXT)");
             db.run("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)");
+            /* migrate older databases that predate the header columns */
+            try { db.run("ALTER TABLE requests ADD COLUMN req_headers TEXT"); } catch (Exception e) {}
+            try { db.run("ALTER TABLE requests ADD COLUMN res_headers TEXT"); } catch (Exception e) {}
             dbInitialized = true;
         }
         return 0;
@@ -134,7 +145,8 @@ extern (C) int history_refresh() {
     try {
         synchronized (dbLock) {
             gHist.length = 0;
-            auto stmt = db.prepare("SELECT id, method, url, created_at, status, latency_ms
+            auto stmt = db.prepare("SELECT id, method, url, created_at, status, latency_ms,
+                                    req_headers, res_headers
                                     FROM requests ORDER BY id DESC LIMIT 500");
             foreach (row; stmt.execute()) {
                 HistoryRec rec;
@@ -144,6 +156,8 @@ extern (C) int history_refresh() {
                 rec.created_at = row.peek!string(3);
                 rec.status = cast(int) row.peek!long(4);
                 rec.latency_ms = row.peek!double(5);
+                rec.req_headers = row.peek!string(6);
+                rec.res_headers = row.peek!string(7);
                 gHist ~= rec;
             }
         }
@@ -167,6 +181,8 @@ extern (C) int history_row(int i, HistoryRow* out_row) {
     out_row.created_at = copy_to_cstring(rec.created_at);
     out_row.status = rec.status;
     out_row.latency_ms = rec.latency_ms;
+    out_row.req_headers = copy_to_cstring(rec.req_headers);
+    out_row.res_headers = copy_to_cstring(rec.res_headers);
     return (out_row.method && out_row.url && out_row.created_at) ? 0 : -1;
 }
 
@@ -179,6 +195,35 @@ extern (C) void clear_history() {
         gHist.length = 0;
     } catch (Exception e) {
     }
+}
+
+extern (C) void delete_history_row(long id) {
+    if (!dbInitialized) return;
+    try {
+        synchronized (dbLock) {
+            auto stmt = db.prepare("DELETE FROM requests WHERE id = ?");
+            stmt.bind(1, id);
+            stmt.execute();
+        }
+    } catch (Exception e) {
+    }
+}
+
+extern (C) char* default_db_path() {
+    import std.process : environment;
+    import std.file : exists, mkdirRecurse;
+    import std.path : buildPath;
+
+    string base = environment.get("XDG_DATA_HOME", "");
+    if (base.length == 0) {
+        string home = environment.get("HOME", ".");
+        base = buildPath(home, ".local", "share");
+    }
+    string dir = buildPath(base, "cui-http");
+    if (!exists(dir)) {
+        try { mkdirRecurse(dir); } catch (Exception e) {}
+    }
+    return copy_to_cstring(buildPath(dir, "requests.db"));
 }
 
 extern (C) char* get_setting(const char* c_key) {
@@ -235,6 +280,7 @@ private struct RawResponse {
     int status_code;
     double latency_ms;
     string body;
+    string headers;
 }
 
 private RawResponse run_http(string method, string url, string body, string[] headers, long timeout_ms) {
@@ -281,6 +327,13 @@ private RawResponse run_http(string method, string url, string body, string[] he
         client.perform();
         sw.stop();
         res.status_code = cast(int) client.statusLine.code;
+
+        /* collect response headers into a single text block */
+        string hdrText;
+        foreach (pair; client.responseHeaders.byKeyValue()) {
+            hdrText ~= pair.key ~ ": " ~ pair.value ~ "\n";
+        }
+        res.headers = hdrText;
     } catch (Exception e) {
         sw.stop();
         res.status_code = -1;
@@ -298,13 +351,15 @@ private RawResponse run_http(string method, string url, string body, string[] he
 }
 
 /* Persist one request/response pair to the history table. */
-private void save_request(string method, string url, string body, RawResponse res) {
+private void save_request(string method, string url, string body, string[] headers,
+                          RawResponse res) {
     if (!dbInitialized || res.status_code == 0) return;
     try {
         synchronized (dbLock) {
             auto stmt = db.prepare("INSERT INTO requests
-                (created_at, method, url, req_body, status, latency_ms, res_size)
-                VALUES (?, ?, ?, ?, ?, ?, ?)");
+                (created_at, method, url, req_body, status, latency_ms, res_size,
+                 req_headers, res_headers)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             stmt.bind(1, Clock.currTime().toISOExtString());
             stmt.bind(2, method);
             stmt.bind(3, url);
@@ -312,6 +367,8 @@ private void save_request(string method, string url, string body, RawResponse re
             stmt.bind(5, res.status_code);
             stmt.bind(6, res.latency_ms);
             stmt.bind(7, cast(long) res.body.length);
+            stmt.bind(8, headers.length ? headers.join("\n") : "");
+            stmt.bind(9, res.headers);
             stmt.execute();
         }
     } catch (Exception e) {
@@ -333,7 +390,7 @@ private void worker_loop() {
         string[] headers = gPendingHeaders;
         auto res = run_http(method, url, body, headers, gPendingTimeoutMs);
         atomicStore(gHasWork, false);
-        save_request(method, url, body, res);
+        save_request(method, url, body, headers, res);
         gLastRaw = res;
         atomicStore(gDone, true);
     }
@@ -382,6 +439,7 @@ extern (C) HttpResponse last_response() {
     res.latency_ms = gLastRaw.latency_ms;
     res.body_len = cast(long) gLastRaw.body.length;
     res.body = copy_to_cstring(gLastRaw.body);
+    res.headers = copy_to_cstring(gLastRaw.headers);
     return res;
 }
 
@@ -390,9 +448,9 @@ extern (C) void cancel_request() {
 }
 
 extern (C) void free_response(HttpResponse* res) {
-    if (res !is null && res.body !is null) {
-        free(res.body);
-        res.body = null;
+    if (res !is null) {
+        if (res.body !is null) { free(res.body); res.body = null; }
+        if (res.headers !is null) { free(res.headers); res.headers = null; }
     }
 }
 

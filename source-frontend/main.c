@@ -33,6 +33,8 @@ typedef struct {
     char created[40];
     int status;
     double latency_ms;
+    char req_headers[1024];
+    char res_headers[4096];
 } hist_item;
 
 typedef struct {
@@ -45,6 +47,8 @@ typedef struct {
     char body[BODY_CAP];
     cui_kv_pair params[PARAMS_CAP];
     int nparams;
+    cui_kv_pair req_headers[PARAMS_CAP];
+    int nreq_headers;
 
     bool loading;               /* a request is running in the backend */
     bool shown;                 /* the last response was fetched and shown */
@@ -53,6 +57,7 @@ typedef struct {
     double latency_ms;
     long res_bytes;
     char resp_body[RESP_CAP];
+    char resp_headers[8192];
 
     bool dark;
     bool palette;
@@ -67,8 +72,8 @@ typedef struct {
 } app_state;
 
 enum { NAV_REQUEST = 0, NAV_HISTORY };
-enum { TAB_BODY = 0, TAB_PARAMS };
-enum { RTAB_PREVIEW = 0, RTAB_RAW };
+enum { TAB_BODY = 0, TAB_PARAMS, TAB_HEADERS };
+enum { RTAB_PREVIEW = 0, RTAB_RAW, RTAB_HEADERS };
 enum { LANG_EN = 0, LANG_ES, LANG_COUNT };
 
 /* ------------------------------------------------------------------------ */
@@ -77,28 +82,29 @@ enum { LANG_EN = 0, LANG_ES, LANG_COUNT };
 
 enum {
     T_REQUEST, T_HISTORY, T_ACTIONS, T_NAVIGATION, T_LANGUAGE, T_ENGLISH, T_SPANISH,
-    T_BODY, T_PARAMS, T_RESPONSE, T_PREVIEW, T_RAW, T_URL_PH, T_BODY_PH,
+    T_BODY, T_PARAMS, T_HEADERS, T_RESPONSE, T_PREVIEW, T_RAW, T_URL_PH, T_BODY_PH,
     T_NO_RESPONSE, T_EMPTY, T_ERROR, T_CANCELLED, T_METHOD, T_URL, T_STATUS,
     T_TIME, T_WHEN, T_SEARCH_PH, T_REFRESH, T_CLEAR, T_NEWEST, T_ROWS,
-    T_COPIED, T_SENT, T_CLEARED, T_SEND, T_EMPTY_HIST, T_COUNT
+    T_COPIED, T_SENT, T_CLEARED, T_SEND, T_EMPTY_HIST, T_RESET, T_DELETE, T_RESEND, T_COUNT
 };
 
 static const char *dict[LANG_COUNT][T_COUNT] = {
     { "Request", "History", "Actions", "Navigation", "Language", "English", "Spanish",
-      "Body", "Params", "Response", "Preview", "Raw", "https://api.example.com/v1/users",
+      "Body", "Params", "Headers", "Response", "Preview", "Raw", "https://api.example.com/v1/users",
       "Request body, e.g. application/json",
       "Send a request to see the response here.", "(no body)", "Network error",
       "Cancelled", "Method", "URL", "Status", "Time", "When", "Filter…",
       "Refresh", "Clear history", "Newest first", "Showing %d requests",
-      "Copied", "Request sent", "History cleared", "Send", "No requests yet" },
+      "Copied", "Request sent", "History cleared", "Send", "No requests yet",
+      "Reset", "Delete", "Resend" },
     { "Petición", "Historial", "Acciones", "Navegación", "Idioma", "English", "Español",
-      "Cuerpo", "Parámetros", "Respuesta", "Vista", "Texto", "https://api.example.com/v1/users",
+      "Cuerpo", "Parámetros", "Cabeceras", "Respuesta", "Vista", "Texto", "https://api.example.com/v1/users",
       "Cuerpo de la petición, p.ej. application/json",
       "Envía una petición para ver aquí la respuesta.", "(sin cuerpo)", "Error de red",
       "Cancelada", "Método", "URL", "Estado", "Tiempo", "Fecha", "Filtrar…",
       "Actualizar", "Borrar historial", "Más recientes primero", "Mostrando %d peticiones",
       "Copiado", "Petición enviada", "Historial borrado", "Enviar",
-      "No hay peticiones aún" },
+      "No hay peticiones aún", "Reiniciar", "Borrar", "Repetir" },
 };
 
 static const char *msg(app_state *s, int id) {
@@ -155,9 +161,46 @@ static void save_settings(app_state *s) {
     set_setting("theme", s->dark ? "dark" : "light");
 }
 
+static void reset_form(app_state *s) {
+    s->method = CUI_HTTP_GET;
+    s->url[0] = '\0';
+    s->body[0] = '\0';
+    s->params[0].key[0] = '\0';
+    s->nparams = -1;
+    s->nparams = cui_url_params(s->url, s->params, PARAMS_CAP);
+    /* reset request headers to defaults */
+    memset(s->req_headers, 0, sizeof s->req_headers);
+    strcpy(s->req_headers[0].key, "Accept");
+    strcpy(s->req_headers[0].value, "application/json");
+    s->req_headers[0].enabled = true;
+    strcpy(s->req_headers[1].key, "Content-Type");
+    strcpy(s->req_headers[1].value, "application/json");
+    s->req_headers[1].enabled = true;
+    s->nreq_headers = 2;
+    s->resp_body[0] = '\0';
+    s->resp_headers[0] = '\0';
+    s->has_resp = false;
+    s->status_code = 0;
+    s->latency_ms = 0;
+    s->res_bytes = 0;
+    s->rtab = RTAB_PREVIEW;
+    s->tab = TAB_BODY;
+}
 static void send_request(app_state *s) {
     if (s->loading || !s->url[0]) return;
-    start_request(cui_http_method_name(s->method), s->url, s->body);
+    static char header_block[4096];
+    header_block[0] = '\0';
+    size_t off = 0;
+    for (int i = 0; i < s->nreq_headers; i++) {
+        if (!s->req_headers[i].enabled) continue;
+        if (!s->req_headers[i].key[0]) continue;
+        int n = snprintf(header_block + off, sizeof header_block - off, "%s%s: %s\n",
+                         off ? "" : "", s->req_headers[i].key, s->req_headers[i].value);
+        if (n < 0 || (size_t)n >= sizeof header_block - off) break;
+        off += (size_t)n;
+    }
+    start_request_ex(cui_http_method_name(s->method), s->url, s->body,
+                     header_block[0] ? header_block : NULL, 0);
     s->loading = true;
     s->shown = false;
 }
@@ -177,6 +220,11 @@ static void fetch_response(app_state *s) {
     } else {
         memcpy(s->resp_body, res.body, sizeof s->resp_body - 1);
         s->resp_body[sizeof s->resp_body - 1] = '\0';
+    }
+    if (res.headers) {
+        snprintf(s->resp_headers, sizeof s->resp_headers, "%s", res.headers);
+    } else {
+        s->resp_headers[0] = '\0';
     }
     free_response(&res);
     s->shown = true;
@@ -200,11 +248,17 @@ static void reload_history(app_state *s) {
             h->method[sizeof h->method - 1] = '\0';
             h->url[sizeof h->url - 1] = '\0';
             h->created[sizeof h->created - 1] = '\0';
+            snprintf(h->req_headers, sizeof h->req_headers, "%s", r.req_headers ? r.req_headers : "");
+            snprintf(h->res_headers, sizeof h->res_headers, "%s", r.res_headers ? r.res_headers : "");
+            h->req_headers[sizeof h->req_headers - 1] = '\0';
+            h->res_headers[sizeof h->res_headers - 1] = '\0';
             h->status = r.status;
             h->latency_ms = r.latency_ms;
             free_string(r.method);
             free_string(r.url);
             free_string(r.created_at);
+            free_string(r.req_headers);
+            free_string(r.res_headers);
             s->nhist++;
         }
     }
@@ -212,10 +266,38 @@ static void reload_history(app_state *s) {
 }
 
 /* Loads a history row back into the request bar. */
+static void load_kv_from_text(cui_kv_pair *pairs, int *count, const char *text) {
+    *count = 0;
+    if (!text || !text[0]) return;
+    char buf[1024];
+    snprintf(buf, sizeof buf, "%s", text);
+    char *save = NULL;
+    char *line = strtok_r(buf, "\n", &save);
+    while (line && *count < PARAMS_CAP) {
+        char *colon = strchr(line, ':');
+        if (colon) {
+            *colon = '\0';
+            char *key = line;
+            char *val = colon + 1;
+            while (*val == ' ') val++;
+            /* trim trailing spaces/newlines from key */
+            char *kend = key + strlen(key) - 1;
+            while (kend > key && (*kend == ' ' || *kend == '\r')) *kend-- = '\0';
+            snprintf(pairs[*count].key, sizeof pairs[*count].key, "%s", key);
+            snprintf(pairs[*count].value, sizeof pairs[*count].value, "%s", val);
+            pairs[*count].enabled = true;
+            pairs[*count].secret = false;
+            (*count)++;
+        }
+        line = strtok_r(NULL, "\n", &save);
+    }
+}
 static void reuse_history(app_state *s, int i) {
     s->method = method_from_name(s->hist[i].method);
     snprintf(s->url, sizeof s->url, "%s", s->hist[i].url);
     s->nparams = cui_url_params(s->url, s->params, PARAMS_CAP);
+    load_kv_from_text(s->req_headers, &s->nreq_headers, s->hist[i].req_headers);
+    snprintf(s->resp_headers, sizeof s->resp_headers, "%s", s->hist[i].res_headers);
     s->nav = NAV_REQUEST;
 }
 
@@ -280,6 +362,14 @@ static void topbar(cui_ctx *ui, app_state *s) {
 static void request_view(cui_ctx *ui, app_state *s) {
     bool narrow = compact(ui);
 
+    cui_row(ui, .gap = 8, .align = CUI_ALIGN_CENTER, .width = CUI_FILL) {
+        cui_spacer(ui);
+        if (cui_button(ui, msg(s, T_RESET), .icon = CUI_ICON_REFRESH_CW, .size = CUI_SIZE_SM, .variant = CUI_BUTTON_GHOST)) {
+            reset_form(s);
+            cui_toast(ui, msg(s, T_RESET), .tone = CUI_TONE_INFO);
+        }
+    }
+
     cui_request_bar_result r = cui_request_bar(ui, "request", &s->method, s->url,
                                                sizeof s->url, .loading = s->loading);
     if (r.changed) s->nparams = cui_url_params(s->url, s->params, PARAMS_CAP);
@@ -293,18 +383,21 @@ static void request_view(cui_ctx *ui, app_state *s) {
         }
     }
 
-    static const char *tabs[] = { NULL, NULL };
+    static const char *tabs[] = { NULL, NULL, NULL };
     tabs[0] = msg(s, T_BODY);
     tabs[1] = msg(s, T_PARAMS);
-    cui_tabs(ui, "req_tabs", tabs, 2, &s->tab, .variant = CUI_TABS_UNDERLINE);
+    tabs[2] = msg(s, T_HEADERS);
+    cui_tabs(ui, "req_tabs", tabs, 3, &s->tab, .variant = CUI_TABS_UNDERLINE);
 
     if (s->tab == TAB_BODY) {
         cui_textarea(ui, "body", s->body, sizeof s->body,
                      .placeholder = msg(s, T_BODY_PH), .height = 160);
-    } else {
+    } else if (s->tab == TAB_PARAMS) {
         if (cui_kv_editor(ui, "params", s->params, &s->nparams, PARAMS_CAP)) {
             cui_url_set_params(s->url, sizeof s->url, s->params, s->nparams);
         }
+    } else {
+        cui_kv_editor(ui, "req_headers", s->req_headers, &s->nreq_headers, PARAMS_CAP);
     }
 
     /* ---- response ---- */
@@ -334,15 +427,22 @@ static void request_view(cui_ctx *ui, app_state *s) {
     } else if (s->resp_body[0] == '\0') {
         cui_text(ui, msg(s, T_EMPTY), .size = 13, .color = CUI_COLOR_TEXT_SECONDARY);
     } else {
-        static const char *rtabs[] = { NULL, NULL };
+        static const char *rtabs[] = { NULL, NULL, NULL };
         rtabs[0] = msg(s, T_PREVIEW);
         rtabs[1] = msg(s, T_RAW);
-        cui_tabs(ui, "resp_tabs", rtabs, 2, &s->rtab, .variant = CUI_TABS_PILL);
+        rtabs[2] = msg(s, T_HEADERS);
+        cui_tabs(ui, "resp_tabs", rtabs, 3, &s->rtab, .variant = CUI_TABS_PILL);
         if (s->rtab == RTAB_PREVIEW && looks_like_json(s->resp_body)) {
             cui_json_view(ui, "resp_json", s->resp_body, .max_height = 460);
-        } else {
+        } else if (s->rtab == RTAB_RAW) {
             cui_code_block(ui, "resp_raw", s->resp_body,
                            .lang = looks_like_json(s->resp_body) ? "json" : "text", .max_height = 460);
+        } else {
+            if (s->resp_headers[0]) {
+                cui_code_block(ui, "resp_hdrs", s->resp_headers, .lang = "text", .max_height = 460);
+            } else {
+                cui_text(ui, msg(s, T_EMPTY), .size = 13, .color = CUI_COLOR_TEXT_SECONDARY);
+            }
         }
     }
 }
@@ -356,6 +456,20 @@ static void history_view(cui_ctx *ui, app_state *s) {
                        .placeholder = msg(s, T_SEARCH_PH));
         }
         cui_spacer(ui);
+        if (s->nhist > 0 && cui_button(ui, msg(s, T_RESEND), .icon = CUI_ICON_SEND, .size = CUI_SIZE_SM)) {
+            if (s->hist_sel >= 0 && s->hist_sel < s->nhist) {
+                reuse_history(s, s->hist_sel);
+                send_request(s);
+                cui_toast(ui, msg(s, T_SENT), .tone = CUI_TONE_SUCCESS);
+            }
+        }
+        if (s->nhist > 0 && s->hist_sel >= 0 && s->hist_sel < s->nhist &&
+            cui_button(ui, msg(s, T_DELETE), .icon = CUI_ICON_TRASH_2, .size = CUI_SIZE_SM, .variant = CUI_BUTTON_GHOST)) {
+            delete_history_row(s->hist[s->hist_sel].id);
+            s->hist_stale = true;
+            if (s->nav == NAV_HISTORY) reload_history(s);
+            cui_toast(ui, msg(s, T_CLEARED), .tone = CUI_TONE_WARNING);
+        }
         if (cui_button(ui, msg(s, T_CLEAR), .icon = CUI_ICON_TRASH_2, .size = CUI_SIZE_SM, .variant = CUI_BUTTON_GHOST)) {
             clear_history();
             s->hist_stale = true;
@@ -502,12 +616,33 @@ static void load_settings(app_state *s) {
     }
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    const char *db_arg = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--db=", 5) == 0) db_arg = argv[i] + 5;
+        else if (strcmp(argv[i], "--db") == 0 && i + 1 < argc) db_arg = argv[++i];
+    }
+
     if (!initDRuntime()) {
         fprintf(stderr, "failed to start the D runtime\n");
         return 1;
     }
-    if (init_db("requests.db") != 0) {
+
+    char db_path[4096];
+    if (db_arg) {
+        snprintf(db_path, sizeof db_path, "%s", db_arg);
+    } else {
+        const char *env = getenv("CUI_HTTP_DB");
+        if (env && env[0]) {
+            snprintf(db_path, sizeof db_path, "%s", env);
+        } else {
+            char *def = default_db_path();
+            snprintf(db_path, sizeof db_path, "%s", def ? def : "requests.db");
+            free_string(def);
+        }
+    }
+
+    if (init_db(db_path) != 0) {
         fprintf(stderr, "failed to initialize the SQLite database\n");
         backend_shutdown();
         terminateDRuntime();
@@ -515,8 +650,19 @@ int main(void) {
     }
     start_worker();
 
-    static app_state s = { .nparams = -1, .method = CUI_HTTP_GET };
-    snprintf(s.body, sizeof s.body, "{\n  \"id\": 42\n}\n");
+    static app_state s = { .nparams = -1, .method = CUI_HTTP_GET, .nreq_headers = 0, .hist_stale = true };
+    s.body[0] = '\0';
+    s.resp_body[0] = '\0';
+    s.resp_headers[0] = '\0';
+    strcpy(s.req_headers[0].key, "Accept");
+    strcpy(s.req_headers[0].value, "application/json");
+    s.req_headers[0].enabled = true;
+    s.req_headers[0].secret = false;
+    strcpy(s.req_headers[1].key, "Content-Type");
+    strcpy(s.req_headers[1].value, "application/json");
+    s.req_headers[1].enabled = true;
+    s.req_headers[1].secret = false;
+    s.nreq_headers = 2;
     load_settings(&s);
 
     cui_app *app = cui_app_create(&(cui_app_desc){

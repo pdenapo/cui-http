@@ -28,6 +28,7 @@ typedef struct {
     double latency_ms;
     char* body;        /* malloc'ed, NUL terminated */
     long body_len;     /* bytes without the NUL */
+    char* headers;     /* malloc'ed response headers, "Key: value\\n" per line, or NULL */
 } HttpResponse;
 
 typedef struct {
@@ -37,6 +38,8 @@ typedef struct {
     char* created_at;  /* ISO-8601 timestamp */
     int status;
     double latency_ms;
+    char* req_headers; /* malloc'ed, "Key: value\\n" per line, or NULL */
+    char* res_headers; /* malloc'ed, "Key: value\\n" per line, or NULL */
 } HistoryRow;
 
 /* Ask the backend's worker thread to perform an HTTP request. Non blocking;
@@ -66,6 +69,8 @@ int history_count(void);
 /* Fill *row with cached row i (0 = newest); malloc'ed strings; 0 = ok. */
 int history_row(int i, HistoryRow* row);
 void clear_history(void);
+/* Delete one history row by its id. */
+void delete_history_row(long id);
 
 /* ---- Settings ---- */
 /* Returns a malloc'ed value or NULL when the key is not set. */
@@ -74,6 +79,12 @@ void set_setting(const char* key, const char* value);
 
 /* Releases a malloc'ed string previously given by the backend. */
 void free_string(char* s);
+
+/* Returns a malloc'ed path to the OS-conventional location of the default
+ * history database (e.g. $XDG_DATA_HOME/cui-http/requests.db or
+ * $HOME/.local/share/cui-http/requests.db on Linux), creating the directory
+ * when needed. The caller frees the result with free_string(). */
+char* default_db_path(void);
 
 #ifdef __cplusplus
 }

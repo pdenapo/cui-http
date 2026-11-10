@@ -107,7 +107,8 @@ from the shell land in the same SQLite history the GUI reads:
 ./build_x11/cui_http_cli clear
 ```
 
-History database: `$CUI_HTTP_DB` or `./requests.db`.
+History database: `$CUI_HTTP_DB`, `--db PATH`, or the OS-conventional location
+(`$XDG_DATA_HOME/cui-http/requests.db` / `~/.local/share/cui-http/requests.db`).
 
 ## 6. End to end tests
 
