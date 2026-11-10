@@ -68,22 +68,43 @@ brew install cmake ninja ldc sqlite curl
 ```
 Xcode Command Line Tools are required for the compiler.
 
-## Which frontend for Wayland?
+## Build
 
-On Wayland, prefer a backend with native Wayland support:
+There are several native frontends (one per platform / display server). Pick the
+one that matches your system; the backend is the same in every case.
 
-- **Recommended: `glfw`** — GLFW 3.4+ talks to Wayland directly (no XWayland).
-- **`sdl2`** — also native Wayland (SDL2 ≥ 2.24).
-- **`x11`** — works through XWayland (fine, but not native; default of `build_x11.sh`).
+| Platform | Recommended frontend | Build script | CMake flag |
+|---|---|---|---|
+| Linux (X11 or Wayland) | **GLFW** (native on both) | `./build_linux.sh` | `-DCUI_PLATFORM=glfw` |
+| Linux (X11 only) | X11 | `./build_x11.sh` | `-DCUI_PLATFORM=x11` |
+| Linux (SDL2) | SDL2 | `./build_sdl2.sh` | `-DCUI_PLATFORM=sdl2` |
+| Windows | Win32 (or GLFW/SDL2) | `build_windows.bat` | `-DCUI_PLATFORM=win32` |
+| macOS | Cocoa (or GLFW/SDL2) | `./build_macos.sh` | `-DCUI_PLATFORM=cocoa` |
 
-Build for Wayland with:
+On Linux we recommend **GLFW for everyone**: it speaks to X11 and Wayland
+natively, so a single binary works on both without XWayland. Use X11/SDL2 only
+if you have a specific reason.
+
+```sh
+# Linux (recommended)
+./build_linux.sh
+./build_linux/cui_http
+
+# macOS
+./build_macos.sh
+./build_macos/cui_http
+
+# Windows (cmd)
+build_windows.bat
+build_windows\cui_http.exe
+```
+
+Manual equivalent:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=glfw
 cmake --build build -j 2
 ```
-
-## Build
 
 Do **not** use dub to build or link the backend — CMake invokes `ldc2 -lib`
 directly over `backend.d` plus the d2sqlite3 sources and links the result into

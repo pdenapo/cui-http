@@ -57,8 +57,12 @@ api-tester/
 ### Backend + frontend (normalized path — via CMake)
 
 ```sh
-./build_x11.sh          # X11 build (see build_glfw.sh / build_sdl2.sh for the others)
-./build_x11/api_tester  # run
+./build_linux.sh        # recommended on Linux (GLFW: X11 + Wayland)
+./build_x11.sh          # X11 only
+./build_sdl2.sh         # SDL2
+./build_macos.sh        # macOS (Cocoa)
+build_windows.bat       # Windows (Win32)
+./build_linux/cui_http  # run (adjust path to the chosen build)
 ```
 
 The standard workflow:
