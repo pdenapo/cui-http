@@ -1,7 +1,5 @@
 # cui-http — native API client
 
-Documentation: https://yappologistic.github.io/cui-http/ (built with mdBook from `book/`).
-
 A blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for
 Linux. The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
 framework; the backend is D, compiled into a static library, handling HTTP via
