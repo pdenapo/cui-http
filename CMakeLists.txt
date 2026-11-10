@@ -49,7 +49,7 @@ target_link_libraries(api_tester PRIVATE
     curl
 )
 
-# 6. Programa de prueba en D (app.d)
+# 6. D test program (app.d)
 add_custom_target(run_d_test ALL
     COMMAND ldc2 -I${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/source_lib
                 -I${CMAKE_CURRENT_SOURCE_DIR}/vendor/d2sqlite3/source
@@ -60,5 +60,19 @@ add_custom_target(run_d_test ALL
                 -L-lsqlite3 -L-lcurl -L-lpthread -L-ldl -L-lm
                 -of=${CMAKE_CURRENT_BINARY_DIR}/api_tester_d_test
     DEPENDS build_d_backend
-    COMMENT "Compilando programa de prueba en D..."
+    COMMENT "Compiling the D test program..."
+)
+
+# 7. Command line client (cli.d) sharing the same backend and history
+add_custom_target(cui_http_cli ALL
+    COMMAND ldc2 -I${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/source_lib
+                -I${CMAKE_CURRENT_SOURCE_DIR}/vendor/d2sqlite3/source
+                ${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/source/cli.d
+                ${D_STATIC_LIB}
+                /usr/lib/libphobos2-ldc.a
+                /usr/lib/libdruntime-ldc.a
+                -L-lsqlite3 -L-lcurl -L-lpthread -L-ldl -L-lm
+                -of=${CMAKE_CURRENT_BINARY_DIR}/cui_http_cli
+    DEPENDS build_d_backend
+    COMMENT "Compiling the command line client..."
 )
