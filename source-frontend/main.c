@@ -14,7 +14,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-#include "bridge.h"
+#include "backend.h"
 
 /* ------------------------------------------------------------------------ */
 /* State                                                                     */
@@ -237,8 +237,8 @@ static void send_request(app_state *s) {
         if (n < 0 || (size_t)n >= sizeof header_block - off) break;
         off += (size_t)n;
     }
-    start_request_ex(cui_http_method_name(s->method), s->url, s->body,
-                     header_block[0] ? header_block : NULL, 0);
+    start_request(cui_http_method_name(s->method), s->url, s->body,
+                  header_block[0] ? header_block : NULL, 0);
     s->loading = true;
     s->shown = false;
 }
@@ -292,11 +292,11 @@ static void reload_history(app_state *s) {
             h->res_headers[sizeof h->res_headers - 1] = '\0';
             h->status = r.status;
             h->latency_ms = r.latency_ms;
-            free_string(r.method);
-            free_string(r.url);
-            free_string(r.created_at);
-            free_string(r.req_headers);
-            free_string(r.res_headers);
+            free(r.method);
+            free(r.url);
+            free(r.created_at);
+            free(r.req_headers);
+            free(r.res_headers);
             s->nhist++;
         }
     }
@@ -667,12 +667,12 @@ static void load_settings(app_state *s) {
         else if (strcmp(v, "de") == 0) s->lang = LANG_DE;
         else if (strcmp(v, "pt") == 0) s->lang = LANG_PT;
         else s->lang = LANG_EN;
-        free_string(v);
+        free(v);
     }
     v = get_setting("theme");
     if (v) {
         s->dark = strcmp(v, "dark") == 0;
-        free_string(v);
+        free(v);
     }
 }
 
@@ -681,11 +681,6 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--db=", 5) == 0) db_arg = argv[i] + 5;
         else if (strcmp(argv[i], "--db") == 0 && i + 1 < argc) db_arg = argv[++i];
-    }
-
-    if (!initDRuntime()) {
-        fprintf(stderr, "failed to start the D runtime\n");
-        return 1;
     }
 
     char db_path[4096];
@@ -698,17 +693,14 @@ int main(int argc, char **argv) {
         } else {
             char *def = default_db_path();
             snprintf(db_path, sizeof db_path, "%s", def ? def : "requests.db");
-            free_string(def);
+            free(def);
         }
     }
 
-    if (init_db(db_path) != 0) {
+    if (backend_init(db_path) != 0) {
         fprintf(stderr, "failed to initialize the SQLite database\n");
-        backend_shutdown();
-        terminateDRuntime();
         return 1;
     }
-    start_worker();
 
     static app_state s = { .nparams = -1, .method = CUI_HTTP_GET, .nreq_headers = 0, .hist_stale = true, .first_frame = true };
     s.body[0] = '\0';
@@ -733,7 +725,6 @@ int main(int argc, char **argv) {
     });
     if (!app) {
         backend_shutdown();
-        terminateDRuntime();
         return 1;
     }
 
@@ -745,6 +736,5 @@ int main(int argc, char **argv) {
 
     cui_app_destroy(app);
     backend_shutdown();
-    terminateDRuntime();
     return 0;
 }

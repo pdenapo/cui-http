@@ -3,13 +3,14 @@
 ```
 api-tester/
 ├── api-tester-backend/
-│   ├── include/bridge.h          # C↔D ABI contract
-│   ├── source_lib/backend.d      # D backend: SQLite + libcurl + C ABI exports
-│   ├── source/app.d              # standalone D test program
-│   └── source/cli.d              # command line client
+│   ├── include/backend.h         # shared structs + backend declarations
+│   └── src/
+│       ├── backend.c             # SQLite + libcurl + worker thread
+│       ├── cli.c                 # command line client
+│       └── test.c                # standalone test program
 ├── source-frontend/main.c        # C frontend
 ├── vendor/CUI/                   # CUI framework (submodule)
-├── vendor/d2sqlite3/             # d2sqlite3 (submodule)
+├── vendor/d2sqlite3/             # (legacy, unused)
 ├── tests/                        # vibe.d test server + run_tests.sh
 └── CMakeLists.txt
 ```

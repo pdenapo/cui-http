@@ -1,17 +1,16 @@
-# Backend (D)
+# Backend (C)
 
-Located in `api-tester-backend/source_lib/backend.d`, compiled by CMake into
-`libapi_tester_backend.a`.
+Located in `api-tester-backend/src/backend.c`, compiled directly into
+`cui_http` and `cui_http_cli`.
 
-## Key exports
+## Key functions
 
-- `initDRuntime` / `terminateDRuntime` / `start_worker` / `backend_shutdown`
-- `init_db(path)`, `default_db_path()`
-- `start_request` / `start_request_ex` / `request_done` / `last_response` /
-  `cancel_request` / `free_response`
-- `history_refresh` / `history_count` / `history_row` / `clear_history` /
-  `delete_history_row`
-- `get_setting` / `set_setting` / `free_string`
+- `backend_init(path)`, `backend_shutdown()`, `default_db_path()`
+- `start_request(method, url, body, headers, timeout_ms)`
+- `request_done()`, `last_response()`, `cancel_request()`, `free_response()`
+- `history_refresh()`, `history_count()`, `history_row()`, `clear_history()`,
+  `delete_history_row()`, `free_history_row()`
+- `get_setting(key)`, `set_setting(key, value)`
 
 ## Persistence
 
@@ -26,6 +25,5 @@ Support) and can be overridden with `--db PATH` or `CUI_HTTP_DB`.
 
 ## Networking
 
-libcurl via `std.net.curl`. Always use `auto client = HTTP();` (value
-constructor) — `new HTTP()` skips `initialize()` and leaves the curl handle
-null. Request/response headers are collected into text blocks.
+libcurl. The worker thread runs one request at a time and never blocks the UI.
+Request/response headers are collected into text blocks.

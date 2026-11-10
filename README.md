@@ -2,9 +2,8 @@
 
 A blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for
 Linux. The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
-framework; the backend is D, compiled into a static library, handling HTTP via
-libcurl and persistence via SQLite. No web views, instant startup, tiny memory
-footprint.
+framework; the backend is C99, handling HTTP via libcurl and persistence via
+SQLite. No web views, instant startup, tiny memory footprint.
 
 ## Features
 
@@ -28,15 +27,16 @@ For now, this project has been only tested on Linux, but should work in other pl
 ```
 api-tester/
 ├── api-tester-backend/
-│   ├── include/bridge.h          # C↔D ABI contract
-│   ├── source_lib/backend.d      # D backend: SQLite + libcurl + C ABI exports
-│   ├── source/app.d              # standalone D test program (built by CMake)
-│   └── source/cli.d              # command line client (built by CMake)
+│   ├── include/backend.h         # shared structs + backend declarations
+│   └── src/
+│       ├── backend.c             # SQLite + libcurl + worker thread
+│       ├── cli.c                 # command line client
+│       └── test.c                # standalone test program
 ├── source-frontend/main.c        # C frontend
-├── CUI/                          # CUI framework (local copy / submodule)
-├── vendor/d2sqlite3/             # d2sqlite3 submodule
+├── vendor/CUI/                   # CUI framework (submodule)
+├── vendor/d2sqlite3/             # (legacy, unused)
 ├── tests/server/                 # small vibe.d REST API for end-to-end tests
-├── tests/run_tests.sh            # 23 end-to-end checks
+├── tests/run_tests.sh            # 25 end-to-end checks
 ├── CMakeLists.txt
 ├── build_x11.sh / build_glfw.sh / build_sdl2.sh
 └── AGENTS.md
@@ -107,9 +107,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=glfw
 cmake --build build -j 2
 ```
 
-Do **not** use dub to build or link the backend — CMake invokes `ldc2 -lib`
-directly over `backend.d` plus the d2sqlite3 sources and links the result into
-the C frontend.
+Do **not** use dub to build or link the backend — the whole project is now pure
+C99. CMake compiles `backend.c` directly into `cui_http` and `cui_http_cli`.
 
 ```sh
 ./build_x11.sh            # X11 (use build_glfw.sh / build_sdl2.sh for the others)

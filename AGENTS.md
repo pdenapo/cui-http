@@ -3,7 +3,7 @@
 ## 1. Overview & Goals
 Build a blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for Linux.
 - **Frontend:** C99 using the [CUI](https://github.com/yappologistic/CUI) framework, specifically leveraging native components like `cui_request_bar`, `cui_api_explorer`, tables, tabs and the JSON viewer.
-- **Backend & Logic:** D programming language compiled as a **static library**, handling networking via `std.net.curl` / `libcurl` and persistence via `d2sqlite3` (SQLite).
+- **Backend & Logic:** C99, handling networking via `libcurl` and persistence via `SQLite` (through the `sqlite3` C API). Compiled directly into the same binary — no separate runtime, no FFI bridge.
 - **Core Philosophy:** Zero bloatware, instant startup (< 10ms), extremely low memory footprint (~5MB RAM), and zero web-view dependencies (pure native compilation).
 - **UI features:** English + Spanish (in-app language switch persisted in the database) and light/dark theme (persisted as well). All documentation, code comments and identifier names are written in English.
 
@@ -13,44 +13,38 @@ Build a blazing-fast, lightweight, native API client (Postman/Insomnia alternati
 
 ```text
 api-tester/
-├── api-tester-backend/          # D backend
+├── api-tester-backend/
 │   ├── include/
-│   │   └── bridge.h             # C header: shared structs + exported D functions (the ABI contract)
-│   ├── source_lib/
-│   │   └── backend.d            # D backend: SQLite persistence, HTTP engine (libcurl), C ABI exports
-│   ├── source/
-│   │   └── app.d                # Standalone D test program (built by CMake, not dub)
-│   ├── dub.json                 # dub manifest kept as a dev harness only — NOT used to build/link
-│   └── dub.selections.json
+│   │   └── backend.h            # shared structs + backend function declarations
+│   └── src/
+│       ├── backend.c            # SQLite persistence, HTTP engine (libcurl), worker thread
+│       ├── cli.c                # command line client
+│       └── test.c              # standalone test program
 ├── source-frontend/
-│   └── main.c                   # C frontend: CUI app + calls into the backend via bridge.h
+│   └── main.c                   # C frontend: CUI app + calls into the backend
 ├── vendor/
-│   ├── CUI/                     # CUI framework (fork kept as a submodule)
-│   └── d2sqlite3/               # d2sqlite3 submodule, compiled together with the backend
-├── CMakeLists.txt               # Root build: compiles the D static lib (ldc2 -lib) and links the C frontend
-├── build_x11.sh                 # cmake -S . -B build_x11 -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=x11 && cmake --build build_x11 -j 2
-├── build_glfw.sh                # same pattern with CUI_PLATFORM=glfw
-├── build_sdl2.sh                # same pattern with CUI_PLATFORM=sdl2
-├── clone_my_CUI.sh              # helper to (re)clone the CUI fork into ./CUI
-├── requests.db                  # SQLite database created at runtime (git-ignored)
+│   ├── CUI/                     # CUI framework (submodule)
+│   └── d2sqlite3/               # (legacy, unused in the C version)
+├── tests/
+│   ├── server/                  # vibe.d REST API for end-to-end tests (kept in D)
+│   └── run_tests.sh
+├── CMakeLists.txt               # pure C build
+├── build_linux.sh / build_x11.sh / build_sdl2.sh / build_macos.sh / build_windows.bat
 └── README.md
 ```
 
 ### Important notes about the build
 
-- **Do NOT use dub to build or link the backend.** The backend static library is
-  produced by CMake itself: it invokes `ldc2 -lib` directly over
-  `api-tester-backend/source_lib/*.d` **plus** the d2sqlite3 sources from
-  `vendor/d2sqlite3/source`, and the resulting `libapi_tester_backend.a` is
-  linked into the C executable together with the LDC runtime
-  (`libphobos2-ldc.a`, `libdruntime-ldc.a`), `sqlite3`, `curl`, `pthread`.
-- `dub.json` exists only as a convenience to fetch/keep D dependencies as
-  packages; the authoritative build is CMake.
-- `api-tester-backend/include/bridge.h` is the single source of truth for the
-  C↔D ABI: structs exported from D (`HttpResponse`, `HistoryRow`) must keep
-  field order and types in sync with it.
-- All strings crossing the bridge are `malloc`-ed by the backend and must be
-  freed from C with `free_response()` / `free_string()`.
+### Important notes about the build
+
+- The whole project is now pure C99: no D runtime, no FFI bridge. The backend
+  lives in `api-tester-backend/src/backend.c` and is compiled directly into
+  `cui_http` and `cui_http_cli`.
+- `api-tester-backend/include/backend.h` is the single source of truth for the
+  shared structs (`HttpResponse`, `HistoryRow`) and backend functions.
+- All strings crossing internal boundaries are `malloc`'ed and freed with
+  `free()` / `free_response()` / `free_history_row()`.
+- The test server in `tests/server/` stays in D (vibe.d) as a test harness.
 
 ## 3. Build instructions
 
@@ -72,12 +66,9 @@ cmake --build build_x11 -j 2
 ```
 
 CMake steps performed automatically:
-1. `ldc2 -lib` compiles the D backend (backend.d + d2sqlite3) into
-   `build_x11/libapi_tester_backend.a`.
-2. The CUI framework is built as a subdirectory (`add_subdirectory(CUI)`).
-3. `api_tester` (C frontend) is built and linked against CUI + the backend.
-4. A standalone D test program (`api_tester_d_test`) is built from
-   `api-tester-backend/source/app.d` linked with the same static library.
+1. The CUI framework is built as a subdirectory (`add_subdirectory(vendor/CUI)`).
+2. `cui_http` (C frontend + backend) is built and linked against CUI, sqlite3, curl, pthreads.
+3. `cui_http_cli` (CLI) and `cui_http_test` (test program) are built.
 
 ## 4. Application features (current state)
 
@@ -127,12 +118,10 @@ database. All 23 checks must pass:
 
 ## 7. Notes for contributors
 
-- The D `HTTP` type is a struct whose value constructor runs `initialize()`.
-  Always write `auto client = HTTP();` (never `new HTTP()`), otherwise the
-  curl handle stays null and every `set`/`perform` fails with
-  "A libcurl function was given a bad argument on handle null".
-- `extern (C)` functions take `const char*`; D `string` does not decay to a
-  pointer, so pass `cast(const(char)*) toStringz(s)`.
-- The backend never frees response bodies handed to C: `last_response()`
-  returns a fresh `malloc`'ed copy that the caller owns and frees with
-  `free_response()`.
+- Pure C99: no D runtime like in the previous versions, no FFI. The backend is compiled directly into the
+  frontend and CLI.
+- `backend.h` is the single source of truth for structs and functions.
+- `extern` C functions take `const char *`; pass heap-allocated, NUL-terminated
+  strings. Free results with `free()` / `free_response()` /
+  `free_history_row()`.
+- The test server in `tests/server/` stays in D (vibe.d) as a test harness.

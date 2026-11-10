@@ -8,7 +8,7 @@ to publish a source release on GitHub (including the AUR and Debian packaging).
 - Linux build machine (the project is developed and tested on Linux).
 - Toolchain:
   - `cmake` (>= 3.14), `ninja` (optional but recommended)
-  - `ldc2` (LDC D compiler)
+  - a C99 compiler (`gcc` or `clang`)
   - `libsqlite3-dev`, `libcurl4-openssl-dev`
   - `git`
 - For releases: `gh` (GitHub CLI), authenticated (`gh auth login`).
@@ -23,7 +23,8 @@ git submodule update --init --recursive
 
 ## 1. Local build
 
-Never use `dub` to build or link the backend — CMake drives `ldc2 -lib` directly.
+Never use `dub`: the whole project is now pure C99. CMake compiles `backend.c`
+directly into `cui_http` and `cui_http_cli`.
 
 ```sh
 # X11 (default on Linux)
@@ -47,7 +48,7 @@ CMake produces three binaries:
 
 - `cui_http` — GUI
 - `cui_http_cli` — command line client
-- `api_tester_d_test` — standalone D test program
+- `cui_http_test` — standalone C test program
 
 ## 2. Tests
 

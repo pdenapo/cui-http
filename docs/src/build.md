@@ -21,5 +21,5 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=glfw
 cmake --build build -j 2
 ```
 
-CMake never uses `dub` for the backend; it invokes `ldc2 -lib` directly over
-`api-tester-backend/source_lib/*.d` plus the d2sqlite3 sources.
+CMake never uses `dub` for the backend; the whole project is pure C99. CMake
+compiles `backend.c` directly into `cui_http` and `cui_http_cli`.
