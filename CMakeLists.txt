@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(api_tester C)
+project(cui_http C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 1. Encontrar los archivos fuente del backend
@@ -30,16 +30,16 @@ add_custom_target(build_d_backend ALL DEPENDS ${D_STATIC_LIB})
 
 # 4. Integrar CUI y el ejecutable en C
 add_subdirectory(CUI)
-add_executable(api_tester ./source-frontend/main.c)
+add_executable(cui_http ./source-frontend/main.c)
 
-add_dependencies(api_tester build_d_backend)
+add_dependencies(cui_http build_d_backend)
 
-target_include_directories(api_tester PRIVATE
+target_include_directories(cui_http PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/include
 )
 
 # 5. Enlazar la librería estática, Phobos, Druntime y dependencias del sistema
-target_link_libraries(api_tester PRIVATE
+target_link_libraries(cui_http PRIVATE
     cui::cui
     ${D_STATIC_LIB}
     /usr/lib/libphobos2-ldc.a
