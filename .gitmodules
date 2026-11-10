@@ -1,0 +1,3 @@
+[submodule "vendor/d2sqlite3"]
+	path = vendor/d2sqlite3
+	url = https://github.com/dlang-community/d2sqlite3.git
