@@ -1,0 +1,14 @@
+[book]
+authors = ["cui-http contributors"]
+language = "en"
+src = "src"
+title = "cui-http Documentation"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "dark"
+git-repository-url = "https://github.com/yappologistic/cui-http"
+edit-url-template = "https://github.com/yappologistic/cui-http/edit/main/book/src/{path}"

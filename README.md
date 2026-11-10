@@ -1,5 +1,7 @@
 # cui-http — native API client
 
+Documentation: https://yappologistic.github.io/cui-http/ (built with mdBook from `book/`).
+
 A blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for
 Linux. The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
 framework; the backend is D, compiled into a static library, handling HTTP via
@@ -15,8 +17,9 @@ footprint.
 - Async engine: requests never block the UI; the Send button doubles as Cancel.
 - History view: every request is persisted (method, url, body, request/response
   headers, status, latency, size) in SQLite; click a row to reload it.
-- Settings: English / Español language switch and light/dark theme, both
-  persisted in the database and restored on startup.
+- Settings: language (multiple languages supported) and light/dark theme, both
+  persisted in the database and restored on startup; the language switch is in
+  the top bar next to the theme toggle.
 - Command palette (Ctrl+K) and Ctrl+Enter to send.
 - Command line client (`cui_http_cli`) sharing the same backend and history.
 
