@@ -21,7 +21,7 @@ footprint.
 - Command palette (Ctrl+K) and Ctrl+Enter to send.
 - Command line client (`cui_http_cli`) sharing the same backend and history.
 
-For now, this project only works on Linux...
+For now, this project has been only tested on Linux, but should work in other platforms as well. Your help is wellcome!
 
 ## Layout
 
