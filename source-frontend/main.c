@@ -74,7 +74,7 @@ typedef struct {
 enum { NAV_REQUEST = 0, NAV_HISTORY };
 enum { TAB_BODY = 0, TAB_PARAMS, TAB_HEADERS };
 enum { RTAB_PREVIEW = 0, RTAB_RAW, RTAB_HEADERS };
-enum { LANG_EN = 0, LANG_ES, LANG_COUNT };
+enum { LANG_EN = 0, LANG_DE, LANG_ES, LANG_FR, LANG_IT, LANG_PT, LANG_COUNT };
 
 /* ------------------------------------------------------------------------ */
 /* Translations (English and Spanish)                                        */
@@ -93,18 +93,50 @@ static const char *dict[LANG_COUNT][T_COUNT] = {
       "Body", "Params", "Headers", "Response", "Preview", "Raw", "https://api.example.com/v1/users",
       "Request body, e.g. application/json",
       "Send a request to see the response here.", "(no body)", "Network error",
-      "Cancelled", "Method", "URL", "Status", "Time", "When", "Filter…",
+      "Cancelled", "Method", "URL", "Status", "Time", "When", "Filter\u2026",
       "Refresh", "Clear history", "Newest first", "Showing %d requests",
       "Copied", "Request sent", "History cleared", "Send", "No requests yet",
       "Reset", "Delete", "Resend" },
-    { "Petición", "Historial", "Acciones", "Navegación", "Idioma", "English", "Español",
-      "Cuerpo", "Parámetros", "Cabeceras", "Respuesta", "Vista", "Texto", "https://api.example.com/v1/users",
-      "Cuerpo de la petición, p.ej. application/json",
-      "Envía una petición para ver aquí la respuesta.", "(sin cuerpo)", "Error de red",
-      "Cancelada", "Método", "URL", "Estado", "Tiempo", "Fecha", "Filtrar…",
-      "Actualizar", "Borrar historial", "Más recientes primero", "Mostrando %d peticiones",
-      "Copiado", "Petición enviada", "Historial borrado", "Enviar",
-      "No hay peticiones aún", "Reiniciar", "Borrar", "Repetir" },
+    { "Anfrage", "Verlauf", "Aktionen", "Navigation", "Sprache", "English", "Deutsch",
+      "K\u00f6rper", "Parameter", "Header", "Antwort", "Vorschau", "Text", "https://api.example.com/v1/users",
+      "Anfragek\u00f6rper, z. B. application/json",
+      "Senden Sie eine Anfrage, um die Antwort hier zu sehen.", "(kein K\u00f6rper)", "Netzwerkfehler",
+      "Abgebrochen", "Methode", "URL", "Status", "Zeit", "Wann", "Filtern\u2026",
+      "Aktualisieren", "Verlauf l\u00f6schen", "Neueste zuerst", "%d Anfragen angezeigt",
+      "Kopiert", "Anfrage gesendet", "Verlauf gel\u00f6scht", "Senden", "Keine Anfragen",
+      "Zur\u00fccksetzen", "L\u00f6schen", "Wiederholen" },
+    { "Petici\u00f3n", "Historial", "Acciones", "Navegaci\u00f3n", "Idioma", "English", "Espa\u00f1ol",
+      "Cuerpo", "Par\u00e1metros", "Cabeceras", "Respuesta", "Vista", "Texto", "https://api.example.com/v1/users",
+      "Cuerpo de la petici\u00f3n, p.ej. application/json",
+      "Env\u00eda una petici\u00f3n para ver aqu\u00ed la respuesta.", "(sin cuerpo)", "Error de red",
+      "Cancelada", "M\u00e9todo", "URL", "Estado", "Tiempo", "Fecha", "Filtrar\u2026",
+      "Actualizar", "Borrar historial", "M\u00e1s recientes primero", "Mostrando %d peticiones",
+      "Copiado", "Petici\u00f3n enviada", "Historial borrado", "Enviar", "No hay peticiones a\u00fan",
+      "Reiniciar", "Borrar", "Repetir" },
+    { "Requ\u00eate", "Historique", "Actions", "Navigation", "Langue", "English", "Fran\u00e7ais",
+      "Corps", "Param\u00e8tres", "En-t\u00eates", "R\u00e9ponse", "Aper\u00e7u", "Texte", "https://api.example.com/v1/users",
+      "Corps de la requ\u00eate, ex. application/json",
+      "Envoyez une requ\u00eate pour voir la r\u00e9ponse ici.", "(aucun corps)", "Erreur r\u00e9seau",
+      "Annul\u00e9e", "M\u00e9thode", "URL", "Statut", "Temps", "Quand", "Filtrer\u2026",
+      "Actualiser", "Effacer l'historique", "Plus r\u00e9cents d'abord", "Affichage de %d requ\u00eates",
+      "Copi\u00e9", "Requ\u00eate envoy\u00e9e", "Historique effac\u00e9", "Envoyer", "Aucune requ\u00eate",
+      "R\u00e9initialiser", "Supprimer", "R\u00e9p\u00e9ter" },
+    { "Richiesta", "Cronologia", "Azioni", "Navigazione", "Lingua", "English", "Italiano",
+      "Corpo", "Parametri", "Intestazioni", "Risposta", "Anteprima", "Testo", "https://api.example.com/v1/users",
+      "Corpo della richiesta, es. application/json",
+      "Invia una richiesta per vedere qui la risposta.", "(nessun corpo)", "Errore di rete",
+      "Annullata", "Metodo", "URL", "Stato", "Tempo", "Quando", "Filtra\u2026",
+      "Aggiorna", "Cancella cronologia", "Pi\u00f9 recenti prima", "Mostrando %d richieste",
+      "Copiato", "Richiesta inviata", "Cronologia cancellata", "Invia", "Nessuna richiesta",
+      "Reimposta", "Elimina", "Ripeti" },
+    { "Requisi\u00e7\u00e3o", "Hist\u00f3rico", "A\u00e7\u00f5es", "Navega\u00e7\u00e3o", "Idioma", "English", "Portugu\u00eas",
+      "Corpo", "Par\u00e2metros", "Cabe\u00e7alhos", "Resposta", "Pr\u00e9-visualiza\u00e7\u00e3o", "Texto", "https://api.example.com/v1/users",
+      "Corpo da requisi\u00e7\u00e3o, ex. application/json",
+      "Envie uma requisi\u00e7\u00e3o para ver a resposta aqui.", "(sem corpo)", "Erro de rede",
+      "Cancelada", "M\u00e9todo", "URL", "Status", "Tempo", "Quando", "Filtrar\u2026",
+      "Atualizar", "Limpar hist\u00f3rico", "Mais recentes primeiro", "Mostrando %d requisi\u00e7\u00f5es",
+      "Copiado", "Requisi\u00e7\u00e3o enviada", "Hist\u00f3rico limpo", "Enviar", "Nenhuma requisi\u00e7\u00e3o",
+      "Reiniciar", "Excluir", "Repetir" },
 };
 
 static const char *msg(app_state *s, int id) {
@@ -157,7 +189,13 @@ static int method_from_name(const char *name) {
 /* ------------------------------------------------------------------------ */
 
 static void save_settings(app_state *s) {
-    set_setting("language", s->lang == LANG_ES ? "es" : "en");
+    const char *code = "en";
+    if (s->lang == LANG_ES) code = "es";
+    else if (s->lang == LANG_IT) code = "it";
+    else if (s->lang == LANG_FR) code = "fr";
+    else if (s->lang == LANG_DE) code = "de";
+    else if (s->lang == LANG_PT) code = "pt";
+    set_setting("language", code);
     set_setting("theme", s->dark ? "dark" : "light");
 }
 
@@ -340,14 +378,12 @@ static void topbar(cui_ctx *ui, app_state *s) {
                  .font = CUI_FONT_MEDIUM, .size = 15, .nowrap = true);
         cui_spacer(ui);
         cui_menu(ui, msg(s, T_LANGUAGE), .icon = CUI_ICON_GLOBE, .variant = CUI_BUTTON_GHOST, .placement = CUI_PLACE_BOTTOM_END) {
-            if (cui_menu_item(ui, "English", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_EN)) {
-                s->lang = LANG_EN;
-                save_settings(s);
-            }
-            if (cui_menu_item(ui, "Español", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_ES)) {
-                s->lang = LANG_ES;
-                save_settings(s);
-            }
+            if (cui_menu_item(ui, "English", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_EN)) { s->lang = LANG_EN; save_settings(s); }
+            if (cui_menu_item(ui, "Deutsch", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_DE)) { s->lang = LANG_DE; save_settings(s); }
+            if (cui_menu_item(ui, "Español", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_ES)) { s->lang = LANG_ES; save_settings(s); }
+            if (cui_menu_item(ui, "Français", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_FR)) { s->lang = LANG_FR; save_settings(s); }
+            if (cui_menu_item(ui, "Italiano", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_IT)) { s->lang = LANG_IT; save_settings(s); }
+            if (cui_menu_item(ui, "Português", .icon = CUI_ICON_GLOBE, .checked = s->lang == LANG_PT)) { s->lang = LANG_PT; save_settings(s); }
         }
         if (cui_icon_button(ui, cui_get_theme_mode(ui) == CUI_THEME_DARK ? CUI_ICON_SUN : CUI_ICON_MOON,
                             .tooltip = "Toggle theme")) {
@@ -541,6 +577,16 @@ static void frame(cui_ctx *ui, void *user) {
         s->first_frame = false;
         cui_set_theme(ui, s->dark ? CUI_THEME_DARK : CUI_THEME_LIGHT);
         s->nparams = cui_url_params(s->url, s->params, PARAMS_CAP);
+        /* Test hook: when CUI_HTTP_TEST_MARKER is set, record the applied
+         * settings so headless tests can verify persistence wiring. */
+        const char *marker = getenv("CUI_HTTP_TEST_MARKER");
+        if (marker && marker[0]) {
+            FILE *f = fopen(marker, "w");
+            if (f) {
+                fprintf(f, "theme=%s\nlang=%d\n", s->dark ? "dark" : "light", s->lang);
+                fclose(f);
+            }
+        }
     }
 
     /* Keyboard: Ctrl+K opens the palette, Ctrl+Enter sends the request. */
@@ -606,7 +652,12 @@ static void frame(cui_ctx *ui, void *user) {
 static void load_settings(app_state *s) {
     char *v = get_setting("language");
     if (v) {
-        s->lang = strcmp(v, "es") == 0 ? LANG_ES : LANG_EN;
+        if (strcmp(v, "es") == 0) s->lang = LANG_ES;
+        else if (strcmp(v, "it") == 0) s->lang = LANG_IT;
+        else if (strcmp(v, "fr") == 0) s->lang = LANG_FR;
+        else if (strcmp(v, "de") == 0) s->lang = LANG_DE;
+        else if (strcmp(v, "pt") == 0) s->lang = LANG_PT;
+        else s->lang = LANG_EN;
         free_string(v);
     }
     v = get_setting("theme");
@@ -650,7 +701,7 @@ int main(int argc, char **argv) {
     }
     start_worker();
 
-    static app_state s = { .nparams = -1, .method = CUI_HTTP_GET, .nreq_headers = 0, .hist_stale = true };
+    static app_state s = { .nparams = -1, .method = CUI_HTTP_GET, .nreq_headers = 0, .hist_stale = true, .first_frame = true };
     s.body[0] = '\0';
     s.resp_body[0] = '\0';
     s.resp_headers[0] = '\0';
