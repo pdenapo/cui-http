@@ -1,0 +1,50 @@
+# --- CMake ---
+build/
+build_x11/
+CMakeCache.txt
+CMakeFiles/
+cmake-install.cmake
+cmake_install.cmake
+Makefile
+*.cmake
+/*.a
+/*.so
+/*.o
+
+# --- Compiladores y Artefactos (C y D) ---
+*.o
+*.a
+*.so
+*.lo
+*.la
+*.lai
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+*.app
+api_tester_d_test
+
+# --- Compilador LDC / DMD ---
+.dub/
+*.di
+*.deps
+
+# --- Editores y Entornos de Desarrollo ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cache/
+.cls
+.vscode-test/
+compile_commands.json
+
+# --- Archivos de Base de Datos y Logs locales ---
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.tmp

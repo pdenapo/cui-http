@@ -1,0 +1,33 @@
+{
+    "name": "api-tester-backend",
+    "authors": [
+        "Pablo De Napoli"
+    ],
+    "targetType": "executable",
+    "sourcePaths": [
+        "source"
+    ],
+    "dependencies": {
+        "api-tester-backend:lib": "*",
+        "d2sqlite3": "~>1.0.0"
+    },
+    "subPackages": [
+        {
+            "name": "lib",
+            "targetType": "staticLibrary",
+            "sourcePaths": [
+                "source_lib"
+            ],
+            "importPaths": [
+                "source_lib"
+            ],
+            "dependencies": {
+                "d2sqlite3": "~>1.0.0"
+            },
+            "libs": ["sqlite3", "curl"]
+        }
+    ],
+    "description": "Api tester Backend.",
+    "copyright": "Copyright © 2026, Pablo De Napoli",
+    "license": "GPL-3"
+}
