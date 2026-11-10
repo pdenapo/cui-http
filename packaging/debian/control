@@ -1,0 +1,15 @@
+Source: cui-http
+Section: devel
+Priority: optional
+Maintainer: cui-http contributors <cui-http@example.com>
+Build-Depends: debhelper-compat (= 13), cmake, ninja-build, ldc, libsqlite3-dev, libcurl4-openssl-dev, git
+Standards-Version: 4.6.2
+Homepage: https://github.com/yappologistic/cui-http
+Vcs-Git: https://github.com/yappologistic/cui-http.git
+
+Package: cui-http
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libsqlite3-0, libcurl4
+Description: Native API client (Postman/Insomnia alternative)
+ Blazing-fast native API client built with CUI and a D backend.
+ Includes the cui_http GUI and the cui-http-cli command line tool.

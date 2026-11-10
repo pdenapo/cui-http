@@ -1,0 +1,42 @@
+# Maintainer: cui-http contributors
+pkgname=cui-http
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Native API client (Postman/Insomnia alternative) with a D backend"
+arch=('x86_64' 'aarch64')
+url="https://github.com/yappologistic/cui-http"
+license=('GPL-3.0-or-later')
+depends=('glibc' 'sqlite' 'curl' 'libx11' 'libglvnd')
+makedepends=('cmake' 'ldc' 'ninja' 'git')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/yappologistic/cui-http/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+    cd "$pkgname-$pkgver"
+    git submodule update --init --recursive || true
+}
+
+build() {
+    cd "$pkgname-$pkgver"
+    cmake -S . -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCUI_PLATFORM=x11 \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build --parallel
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    install -Dm755 build/cui_http "$pkgdir/usr/bin/cui-http"
+    install -Dm755 build/cui_http_cli "$pkgdir/usr/bin/cui-http-cli"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+    # desktop entry
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/cui-http.desktop" <<EOF
+[Desktop Entry]
+Name=cui-http
+Comment=Native API client
+Exec=cui-http
+Type=Application
+Categories=Development;
+EOF
+}

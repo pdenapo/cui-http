@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- -G Ninja -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=x11
+
+override_dh_auto_build:
+	dh_auto_build --parallel
+
+override_dh_auto_install:
+	install -Dm755 debian/tmp/usr/bin/cui_http $(CURDIR)/debian/cui-http/usr/bin/cui-http 2>/dev/null || true
+	# dh_auto_install already installs via cmake install; provide manual fallback:
+	install -d $(CURDIR)/debian/cui-http/usr/bin
+	install -m755 $(CURDIR)/build/cui_http $(CURDIR)/debian/cui-http/usr/bin/cui-http
+	install -m755 $(CURDIR)/build/cui_http_cli $(CURDIR)/debian/cui-http/usr/bin/cui-http-cli

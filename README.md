@@ -20,6 +20,8 @@ footprint.
 - Command palette (Ctrl+K) and Ctrl+Enter to send.
 - Command line client (`cui_http_cli`) sharing the same backend and history.
 
+For now, this project only works on Linux...
+
 ## Layout
 
 ```
@@ -37,6 +39,12 @@ api-tester/
 ├── CMakeLists.txt
 ├── build_x11.sh / build_glfw.sh / build_sdl2.sh
 └── AGENTS.md
+```
+
+## Getting the code 
+
+```sh
+git clone --recurse-submodules https://github.com/pdenapo/cui-http.git
 ```
 
 ## Build

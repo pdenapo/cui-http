@@ -29,7 +29,7 @@ add_custom_command(
 add_custom_target(build_d_backend ALL DEPENDS ${D_STATIC_LIB})
 
 # 4. Integrar CUI y el ejecutable en C
-add_subdirectory(CUI)
+add_subdirectory(vendor/CUI)
 add_executable(cui_http ./source-frontend/main.c)
 
 add_dependencies(cui_http build_d_backend)
@@ -63,7 +63,10 @@ add_custom_target(run_d_test ALL
     COMMENT "Compiling the D test program..."
 )
 
-# 7. Command line client (cli.d) sharing the same backend and history
+# Install rules (used by CPack and distro packaging)
+install(TARGETS cui_http RUNTIME DESTINATION bin)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/cui_http_cli
+        DESTINATION bin)
 add_custom_target(cui_http_cli ALL
     COMMAND ldc2 -I${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/source_lib
                 -I${CMAKE_CURRENT_SOURCE_DIR}/vendor/d2sqlite3/source

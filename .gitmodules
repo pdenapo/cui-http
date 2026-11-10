@@ -1,3 +1,7 @@
 [submodule "vendor/d2sqlite3"]
 	path = vendor/d2sqlite3
 	url = https://github.com/dlang-community/d2sqlite3.git
+[submodule "vendor/CUI"]
+	path = vendor/CUI
+	url = https://github.com/pdenapo/CUI.git
+	branch = my_version

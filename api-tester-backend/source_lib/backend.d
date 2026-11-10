@@ -210,20 +210,36 @@ extern (C) void delete_history_row(long id) {
 }
 
 extern (C) char* default_db_path() {
-    import std.process : environment;
     import std.file : exists, mkdirRecurse;
     import std.path : buildPath;
 
-    string base = environment.get("XDG_DATA_HOME", "");
-    if (base.length == 0) {
+    string base;
+    string dir;
+    string file = "requests.db";
+
+    version (Windows) {
+        import std.process : environment;
+        base = environment.get("APPDATA", environment.get("LOCALAPPDATA", "."));
+        dir = buildPath(base, "cui-http");
+    } else version (OSX) {
+        import std.process : environment;
         string home = environment.get("HOME", ".");
-        base = buildPath(home, ".local", "share");
+        base = buildPath(home, "Library", "Application Support");
+        dir = buildPath(base, "cui-http");
+    } else {
+        import std.process : environment;
+        base = environment.get("XDG_DATA_HOME", "");
+        if (base.length == 0) {
+            string home = environment.get("HOME", ".");
+            base = buildPath(home, ".local", "share");
+        }
+        dir = buildPath(base, "cui-http");
     }
-    string dir = buildPath(base, "cui-http");
+
     if (!exists(dir)) {
         try { mkdirRecurse(dir); } catch (Exception e) {}
     }
-    return copy_to_cstring(buildPath(dir, "requests.db"));
+    return copy_to_cstring(buildPath(dir, file));
 }
 
 extern (C) char* get_setting(const char* c_key) {

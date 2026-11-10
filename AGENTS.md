@@ -24,8 +24,8 @@ api-tester/
 │   └── dub.selections.json
 ├── source-frontend/
 │   └── main.c                   # C frontend: CUI app + calls into the backend via bridge.h
-├── CUI/                         # CUI framework (fork kept as a submodule / local copy)
 ├── vendor/
+│   ├── CUI/                     # CUI framework (fork kept as a submodule)
 │   └── d2sqlite3/               # d2sqlite3 submodule, compiled together with the backend
 ├── CMakeLists.txt               # Root build: compiles the D static lib (ldc2 -lib) and links the C frontend
 ├── build_x11.sh                 # cmake -S . -B build_x11 -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=x11 && cmake --build build_x11 -j 2

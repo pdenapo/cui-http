@@ -309,25 +309,34 @@ static void load_kv_from_text(cui_kv_pair *pairs, int *count, const char *text) 
     if (!text || !text[0]) return;
     char buf[1024];
     snprintf(buf, sizeof buf, "%s", text);
-    char *save = NULL;
-    char *line = strtok_r(buf, "\n", &save);
-    while (line && *count < PARAMS_CAP) {
-        char *colon = strchr(line, ':');
-        if (colon) {
+    /* portable line splitter (no strtok_r dependency) */
+    char *p = buf;
+    while (*p && *count < PARAMS_CAP) {
+        /* find end of current line */
+        char *line_start = p;
+        while (*p && *p != '\n') p++;
+        char saved = *p;
+        *p = '\0';
+        /* trim trailing \r */
+        size_t len = strlen(line_start);
+        while (len > 0 && (line_start[len-1] == '\r' || line_start[len-1] == ' ')) line_start[--len] = '\0';
+        char *colon = strchr(line_start, ':');
+        if (colon && line_start[0]) {
             *colon = '\0';
-            char *key = line;
+            char *key = line_start;
             char *val = colon + 1;
             while (*val == ' ') val++;
-            /* trim trailing spaces/newlines from key */
             char *kend = key + strlen(key) - 1;
-            while (kend > key && (*kend == ' ' || *kend == '\r')) *kend-- = '\0';
+            while (kend > key && (*kend == ' ')) *kend-- = '\0';
             snprintf(pairs[*count].key, sizeof pairs[*count].key, "%s", key);
             snprintf(pairs[*count].value, sizeof pairs[*count].value, "%s", val);
             pairs[*count].enabled = true;
             pairs[*count].secret = false;
             (*count)++;
         }
-        line = strtok_r(NULL, "\n", &save);
+        if (saved == '\0') break;
+        *p = saved;
+        p++;
     }
 }
 static void reuse_history(app_state *s, int i) {
