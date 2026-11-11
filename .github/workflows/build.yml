@@ -61,7 +61,7 @@ jobs:
           $vcpkg = if (Test-Path "C:\vcpkg\vcpkg.exe") { "C:\vcpkg" } elseif (Test-Path "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe") { "$env:VCPKG_INSTALLATION_ROOT" } else { $null }
           if (-not $vcpkg) { throw "vcpkg not found" }
           echo "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
-          & "$vcpkg\vcpkg.exe" install curl sqlite3 glfw3 --triplet x64-windows
+          & "$vcpkg\vcpkg.exe" install --triplet x64-windows
 
       - name: Configure
         shell: bash
