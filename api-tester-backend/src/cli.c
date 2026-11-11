@@ -212,9 +212,6 @@ int main(int argc, char **argv) {
     for (char *c = mbuf; *c; c++) { if (*c >= 'a' && *c <= 'z') *c -= 32; }
     method = mbuf;
 
-    start_worker_thread: ;
-    /* start worker: backend_init doesn't start worker; ensure started */
-    /* backend has no separate start_worker in C version? we auto-start in start_request */
     int rc = run_request(method, url, body, headers, nheaders, timeout);
     backend_shutdown();
     return rc;

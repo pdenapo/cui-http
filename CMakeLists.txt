@@ -90,7 +90,6 @@ target_link_libraries(cui_http_cli PRIVATE
     SQLite3::SQLite3
     CURL::libcurl
     ${CMAKE_DL_LIBS}
-    m
 )
 
 # 6. Test program
@@ -106,11 +105,13 @@ target_link_libraries(cui_http_test PRIVATE
     SQLite3::SQLite3
     CURL::libcurl
     ${CMAKE_DL_LIBS}
-    m
 )
 
 # 7. Install
-install(TARGETS cui_http cui_http_cli RUNTIME DESTINATION bin)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(cui_http_cli PRIVATE m)
+    target_link_libraries(cui_http_test PRIVATE m)
+endif()
 
 # 8. Tests (ctest)
 enable_testing()

@@ -360,7 +360,7 @@ static void *worker_main(void *arg) {
                 sqlite3_bind_text(stmt, 4, body, -1, SQLITE_TRANSIENT);
                 sqlite3_bind_int(stmt, 5, res.status_code);
                 sqlite3_bind_double(stmt, 6, res.latency_ms);
-                sqlite3_bind_int64(stmt, 7, res.body_len);
+                sqlite3_bind_int64(stmt, 7, (sqlite3_int64)res.body_len);
                 sqlite3_bind_text(stmt, 8, headers, -1, SQLITE_TRANSIENT);
                 sqlite3_bind_text(stmt, 9, res.headers ? res.headers : "", -1, SQLITE_TRANSIENT);
                 sqlite3_step(stmt);
@@ -408,7 +408,7 @@ void start_request(const char *method, const char *url, const char *body,
     if (!g_thread_started) {
         g_thread_started = 1;
         g_stop = 0;
-        THREAD_CREATE(g_thread, worker_main, NULL);
+        (void)THREAD_CREATE(g_thread, worker_main, NULL);
     }
 }
 
