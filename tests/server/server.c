@@ -114,7 +114,7 @@ static void handle(int fd, const char *req) {
         long id = atol(path + 7);
         User *u = find_user(id);
         if (!u) { respond(fd, 404, "application/json", "{\"error\":\"user not found\"}", NULL); return; }
-        char buf[256];
+        char buf[512];
         snprintf(buf, sizeof buf, "{\"id\":%ld,\"name\":\"%s\",\"email\":\"%s\"}", u->id, u->name, u->email);
         respond(fd, 200, "application/json", buf, NULL);
     } else if (strcmp(method, "POST") == 0 && strcmp(path, "/users") == 0) {
@@ -129,7 +129,7 @@ static void handle(int fd, const char *req) {
         if (p) { p = strchr(p, ':'); if (p) { p++; while (*p==' '||*p=='"') p++; size_t i=0; while (*p && *p!='"' && i<127) email[i++]=*p++; email[i]='\0'; } }
         User u; u.id = g_nextid++; snprintf(u.name, sizeof u.name, "%s", name); snprintf(u.email, sizeof u.email, "%s", email);
         g_users[g_nusers++] = u;
-        char buf[256];
+        char buf[512];
         snprintf(buf, sizeof buf, "{\"created\":true,\"id\":%ld,\"name\":\"%s\",\"email\":\"%s\"}", u.id, u.name, u.email);
         respond(fd, 201, "application/json", buf, NULL);
     } else if (strcmp(method, "PUT") == 0 && strncmp(path, "/users/", 7) == 0) {
@@ -143,7 +143,7 @@ static void handle(int fd, const char *req) {
         if (p) { p = strchr(p, ':'); if (p) { p++; while (*p==' '||*p=='"') p++; size_t i=0; while (*p && *p!='"' && i<127) email[i++]=*p++; email[i]='\0'; } }
         snprintf(u->name, sizeof u->name, "%s", name);
         snprintf(u->email, sizeof u->email, "%s", email);
-        char buf[256];
+        char buf[512];
         snprintf(buf, sizeof buf, "{\"updated\":true,\"id\":%ld,\"name\":\"%s\",\"email\":\"%s\"}", u->id, u->name, u->email);
         respond(fd, 200, "application/json", buf, NULL);
     } else if (strcmp(method, "PATCH") == 0 && strncmp(path, "/users/", 7) == 0) {
@@ -155,7 +155,7 @@ static void handle(int fd, const char *req) {
         if (p) { p = strchr(p, ':'); if (p) { p++; while (*p==' '||*p=='"') p++; char tmp[128]={0}; size_t i=0; while (*p && *p!='"' && i<127) tmp[i++]=*p++; tmp[i]='\0'; snprintf(u->name, sizeof u->name, "%s", tmp); } }
         p = strstr(body, "\"email\"");
         if (p) { p = strchr(p, ':'); if (p) { p++; while (*p==' '||*p=='"') p++; char tmp[128]={0}; size_t i=0; while (*p && *p!='"' && i<127) tmp[i++]=*p++; tmp[i]='\0'; snprintf(u->email, sizeof u->email, "%s", tmp); } }
-        char buf[256];
+        char buf[512];
         snprintf(buf, sizeof buf, "{\"patched\":true,\"id\":%ld,\"name\":\"%s\",\"email\":\"%s\"}", u->id, u->name, u->email);
         respond(fd, 200, "application/json", buf, NULL);
     } else if (strcmp(method, "DELETE") == 0 && strncmp(path, "/users/", 7) == 0) {

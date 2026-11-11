@@ -10,6 +10,8 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+TMPDIR_TEST="${TMPDIR:-/tmp}/cui-http-tests"
+mkdir -p "$TMPDIR_TEST" "$ROOT/tests/data"
 CLI="$ROOT/build_x11/cui_http_cli"
 SERVER="$ROOT/tests/server/bin/cui-http-test-server"
 
@@ -26,7 +28,7 @@ rm -f "$DB"
 mkdir -p "$ROOT/tests/data"
 
 # ---------- start the test server ----------
-"$SERVER" >/tmp/opencode/test-server.log 2>&1 &
+"$SERVER" >"$TMPDIR_TEST/test-server.log" 2>&1 &
 SERVER_PID=$!
 cleanup() { kill "$SERVER_PID" 2>/dev/null || true; wait "$SERVER_PID" 2>/dev/null || true; }
 trap cleanup EXIT
@@ -42,7 +44,7 @@ for i in $(seq 1 50); do
 done
 if [ "$ready" != "1" ]; then
     echo "ERROR: test server did not start"
-    cat /tmp/opencode/test-server.log
+    cat "$TMPDIR_TEST/test-server.log"
     exit 1
 fi
 
@@ -68,7 +70,7 @@ run() {
     local name="$1"; shift
     local expected_rc="$1"; shift
     local expr="$1"; shift
-    local out="/tmp/opencode/out.txt"
+    local out="$TMPDIR_TEST/out.txt"
     set +e
     "$CLI" "$@" >"$out" 2>&1
     local rc=$?
@@ -116,7 +118,7 @@ run "status 503" 1 "status: 503" GET "$URL/status/503"
 echo "== 12. slow (latency) =="
 run "slow 800" 0 "status: 200" GET "$URL/slow?ms=800"
 # check the latency printed is at least 700 ms
-grep -oE "\([0-9]+\.[0-9]+ ms" /tmp/opencode/out.txt | head -1
+grep -oE "\([0-9]+\.[0-9]+ ms" "$TMPDIR_TEST/out.txt" | head -1
 
 echo "== 13. invalid JSON =="
 run "bad json" 1 "invalid JSON" POST "$URL/users" -d 'not json'
@@ -125,8 +127,8 @@ echo "== 14. curl-style positional body =="
 run "positional body" 0 "created" POST "$URL/users" '{"name":"Katherine","email":"katherine@nasa.gov"}'
 
 echo "== 15. history command =="
-"$CLI" history 5 >/tmp/opencode/hist.txt 2>&1
-cat /tmp/opencode/hist.txt
+"$CLI" history 5 >"$TMPDIR_TEST/hist.txt" 2>&1
+cat "$TMPDIR_TEST/hist.txt"
 echo "-- history count check --"
 rows=$(sqlite3 "$DB" "SELECT COUNT(*) FROM requests;")
 echo "rows in db: $rows"
@@ -137,22 +139,22 @@ if sqlite3 "$DB" "SELECT COUNT(*) FROM requests WHERE status BETWEEN 200 AND 299
 if sqlite3 "$DB" "SELECT DISTINCT method FROM requests;" | grep -q POST; then echo "  [PASS] POST recorded"; pass=$((pass+1)); else echo "  [FAIL] no POST recorded"; fail=$((fail+1)); fi
 
 echo "== 16. settings via direct backend (smoke: the GUI path) =="
-"$CLI" clear >/tmp/opencode/clear.txt 2>&1
-if grep -q "history cleared" /tmp/opencode/clear.txt; then echo "  [PASS] clear works"; pass=$((pass+1)); else echo "  [FAIL] clear"; fail=$((fail+1)); fi
+"$CLI" clear >"$TMPDIR_TEST/clear.txt" 2>&1
+if grep -q "history cleared" "$TMPDIR_TEST/clear.txt"; then echo "  [PASS] clear works"; pass=$((pass+1)); else echo "  [FAIL] clear"; fail=$((fail+1)); fi
 if [ "$(sqlite3 "$DB" 'SELECT COUNT(*) FROM requests;')" = "0" ]; then echo "  [PASS] history empty after clear"; pass=$((pass+1)); else echo "  [FAIL] history not cleared"; fail=$((fail+1)); fi
 
 echo "== 17. GUI theme/language persistence (first_frame wiring) =="
 GUI_DB="$ROOT/tests/data/gui.db"
-rm -f "$GUI_DB" /tmp/opencode/gui-marker.txt
+rm -f "$GUI_DB" "$TMPDIR_TEST/gui-marker.txt"
 # First run creates the schema.
 CUI_HTTP_DB="$GUI_DB" timeout 2 "$ROOT/build_x11/cui_http" >/dev/null 2>&1 || true
 # Seed dark theme + Italian language.
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('theme','dark');"
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('language','it');"
 # Second run should apply them and write the marker.
-CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER=/tmp/opencode/gui-marker.txt timeout 2 "$ROOT/build_x11/cui_http" >/dev/null 2>&1 || true
-if grep -q "theme=dark" /tmp/opencode/gui-marker.txt; then echo "  [PASS] theme persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] theme not applied"; cat /tmp/opencode/gui-marker.txt; fail=$((fail+1)); fi
-if grep -q "lang=4" /tmp/opencode/gui-marker.txt; then echo "  [PASS] language persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] language not applied"; cat /tmp/opencode/gui-marker.txt; fail=$((fail+1)); fi
+CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" timeout 2 "$ROOT/build_x11/cui_http" >/dev/null 2>&1 || true
+if grep -q "theme=dark" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] theme persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] theme not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
+if grep -q "lang=4" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] language persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] language not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 
 echo
 echo "==============================="
