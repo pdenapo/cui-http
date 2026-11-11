@@ -47,7 +47,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build libsqlite3-dev libcurl4-openssl-dev
+          sudo apt-get install -y cmake ninja-build libsqlite3-dev libcurl4-openssl-dev libglfw3-dev libgl-dev libx11-dev
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'

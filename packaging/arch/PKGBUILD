@@ -6,8 +6,8 @@ pkgdesc="Native API client (Postman/Insomnia alternative) with a D backend"
 arch=('x86_64' 'aarch64')
 url="https://github.com/pdenapo/cui-http"
 license=('GPL-3.0-or-later')
-depends=('glibc' 'sqlite' 'curl' 'libx11' 'libglvnd')
-makedepends=('cmake' 'ldc' 'ninja' 'git')
+depends=('glibc' 'sqlite' 'curl' 'glfw' 'libglvnd')
+makedepends=('cmake' 'gcc' 'ninja' 'git')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/pdenapo/cui-http/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
@@ -20,7 +20,7 @@ build() {
     cd "$pkgname-$pkgver"
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCUI_PLATFORM=x11 \
+        -DCUI_PLATFORM=glfw \
         -DCMAKE_INSTALL_PREFIX=/usr
     cmake --build build --parallel
 }
