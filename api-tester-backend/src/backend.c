@@ -147,12 +147,12 @@ int backend_init(const char *db_path) {
 
 void backend_shutdown(void) {
     /* stop worker */
-    pthread_mutex_lock(&g_mutex);
+    MUTEX_LOCK(g_mutex);
     g_stop = 1;
-    pthread_cond_broadcast(&g_cond);
-    pthread_mutex_unlock(&g_mutex);
+    COND_BROADCAST(g_cond);
+    MUTEX_UNLOCK(g_mutex);
     if (g_thread_started) {
-        pthread_join(g_thread, NULL);
+        THREAD_JOIN(g_thread);
         g_thread_started = 0;
     }
     /* free pending */
@@ -328,9 +328,9 @@ static void do_http(const char *method, const char *url, const char *body,
 static void *worker_main(void *arg) {
     (void)arg;
     for (;;) {
-        pthread_mutex_lock(&g_mutex);
-        while (!g_busy && !g_stop) pthread_cond_wait(&g_cond, &g_mutex);
-        if (g_stop) { pthread_mutex_unlock(&g_mutex); break; }
+        MUTEX_LOCK(g_mutex);
+        while (!g_busy && !g_stop) COND_WAIT(g_cond, g_mutex);
+        if (g_stop) { MUTEX_UNLOCK(g_mutex); break; }
 
         /* copy pending */
         char *method = xstrdup(g_p_method ? g_p_method : "GET");
@@ -340,7 +340,7 @@ static void *worker_main(void *arg) {
         long timeout = g_p_timeout;
 
         /* mark consumed (keep g_busy=1 until done) */
-        pthread_mutex_unlock(&g_mutex);
+        MUTEX_UNLOCK(g_mutex);
 
         /* perform request outside lock */
         HttpResponse res;
@@ -372,14 +372,14 @@ static void *worker_main(void *arg) {
         }
 
         /* store result */
-        pthread_mutex_lock(&g_mutex);
+        MUTEX_LOCK(g_mutex);
         free_response(&g_last);
         g_last = res;
         free(method); free(url); free(body); free(headers);
         g_busy = 0;
         g_done = 1;
-        pthread_cond_broadcast(&g_cond);
-        pthread_mutex_unlock(&g_mutex);
+        COND_BROADCAST(g_cond);
+        MUTEX_UNLOCK(g_mutex);
     }
     return NULL;
 }
@@ -394,8 +394,8 @@ static DWORD WINAPI win_worker(LPVOID arg) {
 
 void start_request(const char *method, const char *url, const char *body,
                    const char *headers, long timeout_ms) {
-    pthread_mutex_lock(&g_mutex);
-    if (g_busy) { pthread_mutex_unlock(&g_mutex); return; }
+    MUTEX_LOCK(g_mutex);
+    if (g_busy) { MUTEX_UNLOCK(g_mutex); return; }
     free(g_p_method); free(g_p_url); free(g_p_body); free(g_p_headers);
     g_p_method = xstrdup(method ? method : "GET");
     g_p_url = xstrdup(url ? url : "");
@@ -405,37 +405,37 @@ void start_request(const char *method, const char *url, const char *body,
     g_busy = 1;
     g_done = 0;
     g_cancel = 0;
-    pthread_cond_signal(&g_cond);
-    pthread_mutex_unlock(&g_mutex);
+    COND_SIGNAL(g_cond);
+    MUTEX_UNLOCK(g_mutex);
 
     if (!g_thread_started) {
         g_thread_started = 1;
         g_stop = 0;
-        pthread_create(&g_thread, NULL, worker_main, NULL);
+        THREAD_CREATE(g_thread, worker_main, NULL);
     }
 }
 
 int request_done(void) {
-    pthread_mutex_lock(&g_mutex);
+    MUTEX_LOCK(g_mutex);
     int d = g_done && !g_busy;
-    pthread_mutex_unlock(&g_mutex);
+    MUTEX_UNLOCK(g_mutex);
     return d;
 }
 
 HttpResponse last_response(void) {
-    pthread_mutex_lock(&g_mutex);
+    MUTEX_LOCK(g_mutex);
     HttpResponse copy = g_last;
     /* deep copy body and headers */
     copy.body = g_last.body ? xstrdup(g_last.body) : NULL;
     copy.headers = g_last.headers ? xstrdup(g_last.headers) : NULL;
-    pthread_mutex_unlock(&g_mutex);
+    MUTEX_UNLOCK(g_mutex);
     return copy;
 }
 
 void cancel_request(void) {
-    pthread_mutex_lock(&g_mutex);
+    MUTEX_LOCK(g_mutex);
     if (g_busy) g_cancel = 1;
-    pthread_mutex_unlock(&g_mutex);
+    MUTEX_UNLOCK(g_mutex);
 }
 
 void free_response(HttpResponse *res) {
