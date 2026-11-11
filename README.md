@@ -66,7 +66,7 @@ sudo apt-get install -y build-essential cmake ninja-build libsqlite3-dev libcurl
 - Visual Studio Build Tools (MSVC) or MinGW
 ### macOS
 ```sh
-brew install cmake ninja sqlite curl
+brew install cmake ninja sqlite curl glfw
 ```
 Xcode Command Line Tools are required for the compiler.
 

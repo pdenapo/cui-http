@@ -19,11 +19,29 @@ set(BACKEND_SOURCES
 
 # Help CMake find dependencies installed by Homebrew (macOS) or other
 # non-standard prefixes.
+# Help CMake find dependencies installed by Homebrew/MacPorts (macOS) or other
+# non-standard prefixes.
 if(APPLE)
-    list(APPEND CMAKE_PREFIX_PATH /opt/homebrew /usr/local)
+    list(APPEND CMAKE_PREFIX_PATH
+        /opt/homebrew /opt/homebrew/opt/glfw
+        /usr/local /usr/local/opt/glfw
+        /opt/local)
 endif()
 if(DEFINED ENV{CMAKE_PREFIX_PATH})
     list(APPEND CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
+endif()
+
+# Ensure the requested platform's dependencies are available, with a clear
+# message (otherwise CMake fails deep inside vendor/CUI).
+if(CUI_PLATFORM STREQUAL "glfw")
+    find_package(glfw3 QUIET)
+    if(NOT glfw3_FOUND)
+        message(FATAL_ERROR
+            "glfw3 not found. Install it:\n"
+            "  macOS:  brew install glfw\n"
+            "  Linux:  sudo apt-get install libglfw3-dev   (or pacman -S glfw)\n"
+            "Or use a different CUI_PLATFORM (x11, sdl2, cocoa, win32).")
+    endif()
 endif()
 
 # 3. CUI framework
