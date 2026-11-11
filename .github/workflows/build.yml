@@ -58,19 +58,20 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
-          C:\vcpkg\vcpkg install curl sqlite3 glfw3 --triplet x64-windows
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          $vcpkg = if (Test-Path "C:\vcpkg\vcpkg.exe") { "C:\vcpkg" } elseif (Test-Path "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe") { "$env:VCPKG_INSTALLATION_ROOT" } else { $null }
+          if (-not $vcpkg) { throw "vcpkg not found" }
+          echo "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
+          & "$vcpkg\vcpkg.exe" install curl sqlite3 glfw3 --triplet x64-windows
 
       - name: Configure
         shell: bash
         run: |
           set -e
           WORKSPACE="${GITHUB_WORKSPACE//\\//}"
+          VCPKG_ROOT="${VCPKG_ROOT//\\//}"
           CMAKE_ARGS=(-S "${WORKSPACE}" -B "${WORKSPACE}/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM="${{ matrix.platform }}")
           if [ "${{ runner.os }}" = "Windows" ]; then
-            CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake")
+            CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
           fi
           cmake "${CMAKE_ARGS[@]}"
 
