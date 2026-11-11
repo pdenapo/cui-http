@@ -74,3 +74,38 @@ jobs:
             build/cui_http_cli
             build/cui_http_test
           retention-days: 14
+
+  release:
+    name: Publish release (binaries)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package per-platform tarballs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for d in artifacts/cui-http-*; do
+            [ -d "$d" ] || continue
+            name=$(basename "$d")
+            # strip the leading "cui-http-" prefix for the archive name
+            archive="cui-http-${name#cui-http-}.tar.gz"
+            tar -czf "dist/${archive}" -C "$d" .
+            echo "Created dist/${archive}"
+          done
+          ls -lh dist
+
+      - name: Create GitHub release with binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false

@@ -2,7 +2,7 @@ Source: cui-http
 Section: devel
 Priority: optional
 Maintainer: cui-http contributors <cui-http@example.com>
-Build-Depends: debhelper-compat (= 13), cmake, ninja-build, ldc, libsqlite3-dev, libcurl4-openssl-dev, git
+Build-Depends: debhelper-compat (= 13), cmake, ninja-build, libsqlite3-dev, libcurl4-openssl-dev, git, libglfw3-dev
 Standards-Version: 4.6.2
 Homepage: https://github.com/pdenapo/cui-http
 Vcs-Git: https://github.com/pdenapo/cui-http.git
