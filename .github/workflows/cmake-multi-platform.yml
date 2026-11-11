@@ -69,13 +69,13 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_BUILD_TYPE=Release
-          -DCUI_PLATFORM=${{ matrix.platform }}
-          ${{ runner.os == 'Windows' && '-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake' || '' }}
-          -S ${{ github.workspace }}
+        run: |
+          set -e
+          CMAKE_ARGS=(-B "${{ steps.strings.outputs.build-output-dir }}" -DCMAKE_C_COMPILER="${{ matrix.c_compiler }}" -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM="${{ matrix.platform }}" -S "${{ github.workspace }}")
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake")
+          fi
+          cmake "${CMAKE_ARGS[@]}"
 
       - name: Build
         shell: bash
