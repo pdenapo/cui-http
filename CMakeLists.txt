@@ -17,6 +17,15 @@ set(BACKEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/api-tester-backend/src/backend.c
 )
 
+# Help CMake find dependencies installed by Homebrew (macOS) or other
+# non-standard prefixes.
+if(APPLE)
+    list(APPEND CMAKE_PREFIX_PATH /opt/homebrew /usr/local)
+endif()
+if(DEFINED ENV{CMAKE_PREFIX_PATH})
+    list(APPEND CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
+endif()
+
 # 3. CUI framework
 add_subdirectory(vendor/CUI)
 
