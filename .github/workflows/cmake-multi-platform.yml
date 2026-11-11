@@ -27,10 +27,6 @@ jobs:
             c_compiler: clang
             cpp_compiler: clang++
             platform: cocoa
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-            platform: glfw
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
@@ -51,7 +47,7 @@ jobs:
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake ninja sqlite curl glfw
+          brew install cmake ninja sqlite curl
 
       - name: Setup vcpkg (Windows)
         if: runner.os == 'Windows'
