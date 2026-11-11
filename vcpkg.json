@@ -1,0 +1,9 @@
+{
+  "name": "cui-http",
+  "version": "0.1.0",
+  "dependencies": [
+    "curl",
+    "glfw3",
+    "sqlite3"
+  ]
+}
