@@ -88,7 +88,19 @@ submodule contents, so use the provided script:
 # prints the SHA256 to paste into packaging/arch/PKGBUILD
 ```
 
-## 5. Publish a GitHub release
+## 5. Publish binaries (one button)
+
+There is a dedicated workflow (`publish.yml`) with a simple button:
+
+1. Go to **Actions → "Publish binaries"**.
+2. Click **"Run workflow"**.
+3. (Optional) Enter the release tag (e.g. `v0.1.2`). Defaults to the tag that triggered the workflow.
+4. Click **"Run workflow"**.
+
+This builds all platforms and attaches the binaries to the release of the given tag.
+It also triggers automatically on `git push origin v0.1.2`.
+
+## 6. Publish a GitHub release
 
 ```sh
 # 1. authenticate once
@@ -110,7 +122,7 @@ gh release create v0.1.0 \
 The release page will also offer GitHub's own (submodule-less) archive; the
 attached tarball is the one PKGBUILDs should use.
 
-## 6. Publish to the AUR (Arch)
+## 7. Publish to the AUR (Arch)
 
 ```sh
 # 1. create an AUR account and upload your SSH key
@@ -136,7 +148,7 @@ git commit -m "Initial import: cui-http 0.1.0"
 git push
 ```
 
-## 7. Build a Debian package
+## 8. Build a Debian package
 
 ```sh
 cd /home/luis/proyectos/api-tester
@@ -145,7 +157,7 @@ dpkg-buildpackage -us -uc -b
 # produces ../cui-http_0.1.0-1_amd64.deb
 ```
 
-## 8. (Optional) Automated releases via GitHub Actions
+## 9. (Optional) Automated releases via GitHub Actions
 
 The workflow in `.github/workflows/build.yml` builds all platform combos on every
 push/PR and on `workflow_dispatch`. To make it publish a release automatically
@@ -166,7 +178,7 @@ release:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 - **"A libcurl function was given a bad argument on handle null"**: the D
   `HTTP` type is a struct; always write `auto client = HTTP();` (never
