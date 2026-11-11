@@ -58,7 +58,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           C:\vcpkg\bootstrap-vcpkg.bat
-          C:\vcpkg\vcpkg install curl sqlite3 --triplet x64-windows
+          C:\vcpkg\vcpkg install curl sqlite3 glfw3 --triplet x64-windows
           echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
 
       - name: Set reusable strings
