@@ -6,11 +6,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # 1. Locate system libraries (portable)
 find_package(Threads REQUIRED)
-find_library(SQLITE3_LIBRARY NAMES sqlite3 REQUIRED)
-find_library(CURL_LIBRARY     NAMES curl   REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(CURL REQUIRED)
 
-message(STATUS "SQLITE3: ${SQLITE3_LIBRARY}")
-message(STATUS "CURL:    ${CURL_LIBRARY}")
+message(STATUS "SQLITE3: ${SQLite3_LIBRARIES}")
+message(STATUS "CURL:    ${CURL_LIBRARIES}")
 
 # 2. Backend C sources
 set(BACKEND_SOURCES
@@ -70,8 +70,8 @@ target_include_directories(cui_http PRIVATE
 target_link_libraries(cui_http PRIVATE
     cui::cui
     Threads::Threads
-    ${SQLITE3_LIBRARY}
-    ${CURL_LIBRARY}
+    SQLite3::SQLite3
+    CURL::libcurl
 )
 
 # 5. CLI
@@ -84,8 +84,8 @@ target_include_directories(cui_http_cli PRIVATE
 )
 target_link_libraries(cui_http_cli PRIVATE
     Threads::Threads
-    ${SQLITE3_LIBRARY}
-    ${CURL_LIBRARY}
+    ${SQLite3_LIBRARIES}
+    ${CURL_LIBRARIES}
     ${CMAKE_DL_LIBS}
     m
 )
@@ -100,8 +100,8 @@ target_include_directories(cui_http_test PRIVATE
 )
 target_link_libraries(cui_http_test PRIVATE
     Threads::Threads
-    ${SQLITE3_LIBRARY}
-    ${CURL_LIBRARY}
+    ${SQLite3_LIBRARIES}
+    ${CURL_LIBRARIES}
     ${CMAKE_DL_LIBS}
     m
 )
