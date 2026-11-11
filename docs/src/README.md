@@ -20,6 +20,6 @@ SQLite. No web views, instant startup, tiny memory footprint.
 
 ## Links
 
-- [Source code](https://github.com/yappologistic/cui-http)
-- [Releases](https://github.com/yappologistic/cui-http/releases)
+- [Source code](https://github.com/pdenapo/cui-http)
+- [Releases](https://github.com/pdenapo/cui-http/releases)
 - [Build guide](build.md)

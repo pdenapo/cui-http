@@ -10,5 +10,5 @@ build-dir = "book"
 [output.html]
 default-theme = "light"
 preferred-dark-theme = "dark"
-git-repository-url = "https://github.com/yappologistic/cui-http"
-edit-url-template = "https://github.com/yappologistic/cui-http/edit/main/book/src/{path}"
+git-repository-url = "https://github.com/pdenapo/cui-http"
+edit-url-template = "https://github.com/pdenapo/cui-http/edit/main/book/src/{path}"

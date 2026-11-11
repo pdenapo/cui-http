@@ -69,3 +69,10 @@ target_link_libraries(cui_http_test PRIVATE
 
 # 7. Install
 install(TARGETS cui_http cui_http_cli RUNTIME DESTINATION bin)
+
+# 8. Tests (ctest)
+enable_testing()
+add_test(NAME backend_unit COMMAND cui_http_test)
+if(UNIX)
+    add_test(NAME e2e_cli COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.sh)
+endif()

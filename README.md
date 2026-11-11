@@ -1,5 +1,7 @@
 # cui-http — native API client
 
+Documentation: https://pdenapo.github.io/cui-http/
+
 A blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for
 Linux. The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
 framework; the backend is C99, handling HTTP via libcurl and persistence via
@@ -139,5 +141,6 @@ History database: `$CUI_HTTP_DB`, `--db PATH`, or the OS-conventional location
 ## End-to-end tests
 
 ```sh
-./tests/run_tests.sh   # 23 checks, all must pass
+./tests/run_tests.sh          # 25 end-to-end checks
+cd build && ctest --output-on-failure   # via CTest (backend_unit + e2e_cli)
 ```

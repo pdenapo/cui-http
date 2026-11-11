@@ -4,11 +4,11 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc="Native API client (Postman/Insomnia alternative) with a D backend"
 arch=('x86_64' 'aarch64')
-url="https://github.com/yappologistic/cui-http"
+url="https://github.com/pdenapo/cui-http"
 license=('GPL-3.0-or-later')
 depends=('glibc' 'sqlite' 'curl' 'libx11' 'libglvnd')
 makedepends=('cmake' 'ldc' 'ninja' 'git')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/yappologistic/cui-http/archive/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/pdenapo/cui-http/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
 prepare() {

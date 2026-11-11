@@ -1,6 +1,6 @@
 # Release & Packaging
 
-See [RELEASE.md](https://github.com/yappologistic/cui-http/blob/main/RELEASE.md)
+See [RELEASE.md](https://github.com/pdenapo/cui-http/blob/main/RELEASE.md)
 for the full process. Summary:
 
 - Build tarball with submodules: `./scripts/make_tarball.sh VERSION`

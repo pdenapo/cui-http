@@ -1,0 +1,76 @@
+name: Build cui-http
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "CUI platform to build (all = every supported combo)"
+        required: false
+        default: "all"
+        type: choice
+        options: [ all, x11, glfw, sdl2, win32, cocoa ]
+
+jobs:
+  build:
+    name: build (${{ matrix.os }} / ${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux
+          - { os: ubuntu-latest, platform: x11 }
+          - { os: ubuntu-latest, platform: glfw }
+          - { os: ubuntu-latest, platform: sdl2 }
+          # Windows (native win32 or glfw/sdl2)
+          - { os: windows-latest, platform: win32 }
+          - { os: windows-latest, platform: glfw }
+          # macOS (native cocoa or glfw/sdl2)
+          - { os: macos-latest, platform: cocoa }
+          - { os: macos-latest, platform: glfw }
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc libsqlite3-dev libcurl4-openssl-dev
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja sqlite curl
+
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install cmake ninja -y
+        shell: pwsh
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCUI_PLATFORM=${{ matrix.platform }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --parallel 2
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cui-http-${{ matrix.os }}-${{ matrix.platform }}
+          path: |
+            build/cui_http
+            build/cui_http_cli
+            build/cui_http_test
+          retention-days: 14
