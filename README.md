@@ -52,20 +52,19 @@ git clone --recurse-submodules https://github.com/pdenapo/cui-http.git
 
 ### Linux (Arch)
 ```sh
-sudo pacman -S base-devel cmake ninja ldc sqlite curl libx11 libglvnd
+sudo pacman -S base-devel cmake ninja sqlite curl libx11 libglvnd
 ```
 ### Linux (Debian / Ubuntu)
 ```sh
-sudo apt-get install -y build-essential cmake ninja-build ldc libsqlite3-dev libcurl4-openssl-dev libx11-dev libgl-dev
+sudo apt-get install -y build-essential cmake ninja-build libsqlite3-dev libcurl4-openssl-dev libx11-dev libgl-dev
 ```
 ### Windows
-- [LDC](https://github.com/ldc-developers/ldc/releases) (add to PATH)
 - CMake + Ninja (`choco install cmake ninja`)
 - SQLite and libcurl dev libraries (vcpkg or prebuilt)
 - Visual Studio Build Tools (MSVC) or MinGW
 ### macOS
 ```sh
-brew install cmake ninja ldc sqlite curl
+brew install cmake ninja sqlite curl
 ```
 Xcode Command Line Tools are required for the compiler.
 
@@ -142,15 +141,3 @@ History database: `$CUI_HTTP_DB`, `--db PATH`, or the OS-conventional location
 ```sh
 ./tests/run_tests.sh   # 23 checks, all must pass
 ```
-
-## Notes
-
-- The D `HTTP` type is a struct whose value constructor runs `initialize()`.
-  Always write `auto client = HTTP();` (never `new HTTP()`), otherwise the curl
-  handle stays null.
-- `extern (C)` parameters take `const char*`; D `string` does not decay to a
-  pointer, so pass `cast(const(char)*) toStringz(s)`.
-- Response bodies/headers handed to C are fresh `malloc`'ed copies owned by the
-  caller (`free_response()` / `free_string()`).
-
-`requests.db` is the SQLite database created at runtime (git-ignored).
