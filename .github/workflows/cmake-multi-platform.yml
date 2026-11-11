@@ -1,6 +1,3 @@
-# Multi-platform CMake build for cui-http.
-# Triggered on push/PR to main. Builds the C frontend + C backend for Linux
-# and Windows (macOS can be added when a macOS runner is available).
 name: CMake on multiple platforms
 
 on:
@@ -44,26 +41,25 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup vcpkg (Windows)
-        if: runner.os == 'Windows'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'a42f93809386f8610446037f407233475273f361'
-          vcpkgJsonGlob: '**/vcpkg.json'
-
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build libsqlite3-dev libcurl4-openssl-dev libglfw3-dev libgl-dev libx11-dev libglfw3-dev libgl-dev libx11-dev libsdl2-dev
+          sudo apt-get install -y cmake ninja-build libsqlite3-dev libcurl4-openssl-dev libglfw3-dev libgl-dev libx11-dev libsdl2-dev
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install cmake ninja sqlite curl glfw
-        run: |
-          choco install cmake ninja -y
+
+      - name: Setup vcpkg (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg install curl sqlite3 --triplet x64-windows
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
 
       - name: Set reusable strings
         id: strings
@@ -78,13 +74,14 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_BUILD_TYPE=Release
           -DCUI_PLATFORM=${{ matrix.platform }}
-          ${{ runner.os == 'Windows' && format('-DCMAKE_TOOLCHAIN_FILE={0}/scripts/buildsystems/vcpkg.cmake', env.VCPKG_ROOT) || '' }}
+          ${{ runner.os == 'Windows' && '-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake' || '' }}
           -S ${{ github.workspace }}
 
       - name: Build
         shell: bash
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release --parallel 2
 
-      - name: Test
+      - name: Test (Linux only)
+        if: runner.os == 'Linux'
         shell: bash
         run: ctest --test-dir ${{ steps.strings.outputs.build-output-dir }} --output-on-failure
