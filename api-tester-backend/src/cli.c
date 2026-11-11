@@ -1,12 +1,22 @@
 /* cli.c - curl-like command line client for cui-http.
  * Reuses the same C backend, so requests land in the same SQLite history. */
+#ifndef _WIN32
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "backend.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <string.h>
+#define strcasecmp _stricmp
+#else
 #include <strings.h>
+#endif
 #include <ctype.h>
 #include <time.h>
 
@@ -55,7 +65,14 @@ static int run_request(const char *method, const char *url, const char *body,
     long to_ms = timeout > 0 ? (long)(timeout * 1000) : 0;
     start_request(method, url, body && body[0] ? body : NULL, hblock, to_ms);
     int ticks = 0;
-    while (!request_done()) { /* busy wait */ struct timespec ts = {0, 20000000}; nanosleep(&ts, NULL); ticks++; }
+    while (!request_done()) { /* busy wait */
+#ifdef _WIN32
+        Sleep(20);
+#else
+        struct timespec ts = {0, 20000000}; nanosleep(&ts, NULL);
+#endif
+        ticks++;
+    }
     HttpResponse res = last_response();
     if (res.status_code == -1) fprintf(stderr, "error: network failure\n");
     else if (res.status_code == -2) fprintf(stderr, "cancelled\n");

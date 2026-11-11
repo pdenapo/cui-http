@@ -14,19 +14,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <time.h>
+#include <errno.h>
 
 #ifdef _WIN32
+#include <windows.h>
 #include <direct.h>
+typedef CRITICAL_SECTION mutex_t;
+typedef CONDITION_VARIABLE cond_t;
+typedef HANDLE thread_t;
+#define MUTEX_INIT(m) InitializeCriticalSection(&(m))
+#define MUTEX_LOCK(m) EnterCriticalSection(&(m))
+#define MUTEX_UNLOCK(m) LeaveCriticalSection(&(m))
+#define COND_INIT(c) InitializeConditionVariable(&(c))
+#define COND_WAIT(c,m) SleepConditionVariableCS(&(c),&(m),INFINITE)
+#define COND_SIGNAL(c) WakeConditionVariable(&(c))
+#define COND_BROADCAST(c) WakeAllConditionVariable(&(c))
+static DWORD WINAPI win_worker(LPVOID arg);
+#define THREAD_CREATE(t,fn,arg) ((t)=CreateThread(NULL,0,win_worker,(arg),0,NULL))!=NULL
+#define THREAD_JOIN(t) (WaitForSingleObject((t),INFINITE),CloseHandle((t)))
 #define MKDIR(d) _mkdir(d)
 #else
-#define MKDIR(d) mkdir((d), 0755)
+#include <pthread.h>
+#include <sys/stat.h>
+typedef pthread_mutex_t mutex_t;
+typedef pthread_cond_t  cond_t;
+typedef pthread_t       thread_t;
+#define MUTEX_INIT(m) pthread_mutex_init(&(m),NULL)
+#define MUTEX_LOCK(m) pthread_mutex_lock(&(m))
+#define MUTEX_UNLOCK(m) pthread_mutex_unlock(&(m))
+#define COND_INIT(c) pthread_cond_init(&(c),NULL)
+#define COND_WAIT(c,m) pthread_cond_wait(&(c),&(m))
+#define COND_SIGNAL(c) pthread_cond_signal(&(c))
+#define COND_BROADCAST(c) pthread_cond_broadcast(&(c))
+#define THREAD_CREATE(t,fn,arg) (pthread_create(&(t),NULL,(fn),(arg))==0)
+#define THREAD_JOIN(t) pthread_join((t),NULL)
+#define MKDIR(d) mkdir((d),0755)
 #endif
 
 #include <curl/curl.h>
 #include <sqlite3.h>
-#include <pthread.h>
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                            */
@@ -49,9 +76,9 @@ static void free_ptr(char **p) { if (p && *p) { free(*p); *p = NULL; } }
 static sqlite3 *g_db = NULL;
 static int g_db_ok = 0;
 
-static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  g_cond  = PTHREAD_COND_INITIALIZER;
-static pthread_t       g_thread;
+static mutex_t g_mutex;
+static cond_t  g_cond;
+static thread_t g_thread;
 static int             g_thread_started = 0;
 static int             g_stop = 0;
 
@@ -97,6 +124,12 @@ static void db_migrate(void) {
 /* ------------------------------------------------------------------ */
 
 int backend_init(const char *db_path) {
+    static int initialized = 0;
+    if (!initialized) {
+        MUTEX_INIT(g_mutex);
+        COND_INIT(g_cond);
+        initialized = 1;
+    }
     if (sqlite3_open(db_path, &g_db) != SQLITE_OK) {
         if (g_db) { sqlite3_close(g_db); g_db = NULL; }
         return -1;
@@ -351,8 +384,12 @@ static void *worker_main(void *arg) {
     return NULL;
 }
 
-/* ------------------------------------------------------------------ */
-/* async api                                                          */
+#ifdef _WIN32
+static DWORD WINAPI win_worker(LPVOID arg) {
+    worker_main(arg);
+    return 0;
+}
+#endif
 /* ------------------------------------------------------------------ */
 
 void start_request(const char *method, const char *url, const char *body,
