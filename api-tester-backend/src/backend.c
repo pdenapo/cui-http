@@ -408,7 +408,7 @@ void start_request(const char *method, const char *url, const char *body,
     if (!g_thread_started) {
         g_thread_started = 1;
         g_stop = 0;
-        (void)THREAD_CREATE(g_thread, worker_main, NULL);
+        (void)(THREAD_CREATE(g_thread, worker_main, NULL));
     }
 }
 
