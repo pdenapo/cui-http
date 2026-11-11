@@ -13,7 +13,7 @@ to publish a source release on GitHub (including the AUR and Debian packaging).
   - `git`
 - For releases: `gh` (GitHub CLI), authenticated (`gh auth login`).
 - For AUR: an AUR account + SSH key, `makepkg`, `namcap`.
-- For Debian: `debhelper`, `dpkg-dev`.
+- **RPM:** `rpmbuild -ba packaging/rpm/cui-http.spec` (after downloading the source tarball).
 
 Submodules must be initialized:
 
