@@ -276,13 +276,10 @@ static void do_http(const char *method, const char *url, const char *body,
     /* user agent */
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "cui-http/1.0");
 
-    struct timespec t0, t1;
-    clock_gettime(CLOCK_MONOTONIC, &t0);
-
+    clock_t t0 = clock();
     CURLcode rc = curl_easy_perform(curl);
-
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    double ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+    clock_t t1 = clock();
+    double ms = (double)(t1 - t0) * 1000.0 / (double)CLOCKS_PER_SEC;
 
     long code = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);

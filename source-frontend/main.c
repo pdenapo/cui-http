@@ -12,7 +12,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#ifndef _WIN32
 #include <strings.h>
+#else
+#define strncasecmp _strnicmp
+#endif
 #include <stdlib.h>
 #include "backend.h"
 
