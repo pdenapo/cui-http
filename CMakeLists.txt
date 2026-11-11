@@ -31,6 +31,18 @@ if(DEFINED ENV{CMAKE_PREFIX_PATH})
     list(APPEND CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
 endif()
 
+# Default CUI platform per OS (so users don't have to pass -DCUI_PLATFORM=...)
+if(NOT DEFINED CUI_PLATFORM OR CUI_PLATFORM STREQUAL "" OR CUI_PLATFORM STREQUAL "auto")
+    if(APPLE)
+        set(CUI_PLATFORM "cocoa" CACHE STRING "Window backend" FORCE)
+    elseif(WIN32)
+        set(CUI_PLATFORM "win32" CACHE STRING "Window backend" FORCE)
+    else()
+        set(CUI_PLATFORM "glfw" CACHE STRING "Window backend" FORCE)
+    endif()
+endif()
+message(STATUS "CUI_PLATFORM: ${CUI_PLATFORM}")
+
 # Ensure the requested platform's dependencies are available, with a clear
 # message (otherwise CMake fails deep inside vendor/CUI).
 if(CUI_PLATFORM STREQUAL "glfw")
