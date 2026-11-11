@@ -160,25 +160,36 @@ if grep -q "history cleared" "$TMPDIR_TEST/clear.txt"; then echo "  [PASS] clear
 if [ "$(sqlite3 "$DB" 'SELECT COUNT(*) FROM requests;')" = "0" ]; then echo "  [PASS] history empty after clear"; pass=$((pass+1)); else echo "  [FAIL] history not cleared"; fail=$((fail+1)); fi
 
 echo "== 17. GUI theme/language persistence (first_frame wiring) =="
-GUI_DB="$ROOT/tests/data/gui.db"
-rm -f "$GUI_DB" "$TMPDIR_TEST/gui-marker.txt"
-# First run creates the schema.
-if command -v xvfb-run >/dev/null 2>&1 && [ -z "${DISPLAY:-}" ]; then
-    timeout 2 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>&1 || true
+if [ -z "$GUI" ]; then
+    echo "  [SKIP] no GUI binary found"
+elif [ -z "${DISPLAY:-}" ] && ! command -v xvfb-run >/dev/null 2>&1; then
+    echo "  [SKIP] no display and no xvfb-run available"
 else
-    timeout 2 env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>&1 || true
+    GUI_DB="$ROOT/tests/data/gui.db"
+    rm -f "$GUI_DB" "$TMPDIR_TEST/gui-marker.txt"
+    if [ -n "${DISPLAY:-}" ]; then
+        timeout 5 env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>"$TMPDIR_TEST/gui-err1.txt" || true
+    else
+        timeout 5 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>"$TMPDIR_TEST/gui-err1.txt" || true
+    fi
+    sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('theme','dark');" 2>/dev/null || true
+    sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('language','it');" 2>/dev/null || true
+    if [ -n "${DISPLAY:-}" ]; then
+        timeout 5 env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>"$TMPDIR_TEST/gui-err2.txt" || true
+    else
+        timeout 5 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>"$TMPDIR_TEST/gui-err2.txt" || true
+    fi
+    if [ -f "$TMPDIR_TEST/gui-marker.txt" ] && grep -q "theme=dark" "$TMPDIR_TEST/gui-marker.txt"; then
+        echo "  [PASS] theme persisted and applied"; pass=$((pass+1))
+    else
+        echo "  [FAIL] theme not applied"; echo "  stderr1:"; cat "$TMPDIR_TEST/gui-err1.txt" 2>/dev/null; echo "  stderr2:"; cat "$TMPDIR_TEST/gui-err2.txt" 2>/dev/null; fail=$((fail+1))
+    fi
+    if [ -f "$TMPDIR_TEST/gui-marker.txt" ] && grep -q "lang=4" "$TMPDIR_TEST/gui-marker.txt"; then
+        echo "  [PASS] language persisted and applied"; pass=$((pass+1))
+    else
+        echo "  [FAIL] language not applied"; fail=$((fail+1))
+    fi
 fi
-# Seed dark theme + Italian language.
-sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('theme','dark');"
-sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('language','it');"
-# Second run should apply them and write the marker.
-if command -v xvfb-run >/dev/null 2>&1 && [ -z "${DISPLAY:-}" ]; then
-    timeout 2 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>&1 || true
-else
-    timeout 2 env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>&1 || true
-fi
-if grep -q "theme=dark" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] theme persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] theme not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
-if grep -q "lang=4" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] language persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] language not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 
 echo
 echo "==============================="
