@@ -84,8 +84,8 @@ target_include_directories(cui_http_cli PRIVATE
 )
 target_link_libraries(cui_http_cli PRIVATE
     Threads::Threads
-    ${SQLite3_LIBRARIES}
-    ${CURL_LIBRARIES}
+    SQLite3::SQLite3
+    CURL::libcurl
     ${CMAKE_DL_LIBS}
     m
 )
@@ -100,8 +100,8 @@ target_include_directories(cui_http_test PRIVATE
 )
 target_link_libraries(cui_http_test PRIVATE
     Threads::Threads
-    ${SQLite3_LIBRARIES}
-    ${CURL_LIBRARIES}
+    SQLite3::SQLite3
+    CURL::libcurl
     ${CMAKE_DL_LIBS}
     m
 )

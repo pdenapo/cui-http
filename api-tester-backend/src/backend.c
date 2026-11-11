@@ -17,6 +17,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(d) _mkdir(d)
+#else
+#define MKDIR(d) mkdir((d), 0755)
+#endif
+
 #include <curl/curl.h>
 #include <sqlite3.h>
 #include <pthread.h>
@@ -537,11 +544,7 @@ char *default_db_path(void) {
     snprintf(dir, strlen(base) + 32, "%s/cui-http", base);
 #endif
     /* create dir (best effort) */
-#ifdef _WIN32
-    _mkdir(dir);
-#else
-    mkdir(dir, 0755);
-#endif
+    MKDIR(dir);
     size_t total = strlen(dir) + 32;
     char *outp = (char *)malloc(total);
 #ifdef _WIN32

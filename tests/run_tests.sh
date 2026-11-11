@@ -29,6 +29,8 @@ for cand in "$ROOT/build/cui_http" "$ROOT/build_x11/cui_http" "$ROOT/build_linux
 done
 SERVER="$ROOT/tests/server/bin/cui-http-test-server"
 
+# Helper to run the GUI on a headless machine (unused, kept for reference).
+
 # Build the test server (pure C) if needed.
 if [ ! -x "$SERVER" ] || [ "tests/server/server.c" -nt "$SERVER" ]; then
     mkdir -p "$ROOT/tests/server/bin"
@@ -161,12 +163,20 @@ echo "== 17. GUI theme/language persistence (first_frame wiring) =="
 GUI_DB="$ROOT/tests/data/gui.db"
 rm -f "$GUI_DB" "$TMPDIR_TEST/gui-marker.txt"
 # First run creates the schema.
-CUI_HTTP_DB="$GUI_DB" timeout 2 "$GUI" >/dev/null 2>&1 || true
+if command -v xvfb-run >/dev/null 2>&1 && [ -z "${DISPLAY:-}" ]; then
+    timeout 2 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>&1 || true
+else
+    timeout 2 env CUI_HTTP_DB="$GUI_DB" "$GUI" >/dev/null 2>&1 || true
+fi
 # Seed dark theme + Italian language.
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('theme','dark');"
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('language','it');"
 # Second run should apply them and write the marker.
-CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" timeout 2 "$GUI" >/dev/null 2>&1 || true
+if command -v xvfb-run >/dev/null 2>&1 && [ -z "${DISPLAY:-}" ]; then
+    timeout 2 xvfb-run -a env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>&1 || true
+else
+    timeout 2 env CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" "$GUI" >/dev/null 2>&1 || true
+fi
 if grep -q "theme=dark" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] theme persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] theme not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 if grep -q "lang=4" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] language persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] language not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 
