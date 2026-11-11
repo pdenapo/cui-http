@@ -12,7 +12,21 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TMPDIR_TEST="${TMPDIR:-/tmp}/cui-http-tests"
 mkdir -p "$TMPDIR_TEST" "$ROOT/tests/data"
-CLI="$ROOT/build_x11/cui_http_cli"
+
+# Locate the CLI binary (CI builds into ./build, local builds into ./build_x11 etc.)
+CLI=""
+for cand in "$ROOT/build/cui_http_cli" "$ROOT/build_x11/cui_http_cli" "$ROOT/build_linux/cui_http_cli" "$ROOT/build_glfw/cui_http_cli" "$ROOT/build_sdl2/cui_http_cli"; do
+    if [ -x "$cand" ]; then CLI="$cand"; break; fi
+done
+if [ -z "$CLI" ]; then
+    echo "ERROR: cui_http_cli not found. Build first (cmake --build build)."
+    exit 1
+fi
+# Locate the GUI binary for the persistence smoke test.
+GUI=""
+for cand in "$ROOT/build/cui_http" "$ROOT/build_x11/cui_http" "$ROOT/build_linux/cui_http" "$ROOT/build_glfw/cui_http" "$ROOT/build_sdl2/cui_http"; do
+    if [ -x "$cand" ]; then GUI="$cand"; break; fi
+done
 SERVER="$ROOT/tests/server/bin/cui-http-test-server"
 
 # Build the test server (pure C) if needed.
@@ -147,12 +161,12 @@ echo "== 17. GUI theme/language persistence (first_frame wiring) =="
 GUI_DB="$ROOT/tests/data/gui.db"
 rm -f "$GUI_DB" "$TMPDIR_TEST/gui-marker.txt"
 # First run creates the schema.
-CUI_HTTP_DB="$GUI_DB" timeout 2 "$ROOT/build_x11/cui_http" >/dev/null 2>&1 || true
+CUI_HTTP_DB="$GUI_DB" timeout 2 "$GUI" >/dev/null 2>&1 || true
 # Seed dark theme + Italian language.
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('theme','dark');"
 sqlite3 "$GUI_DB" "INSERT OR REPLACE INTO settings(key,value) VALUES('language','it');"
 # Second run should apply them and write the marker.
-CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" timeout 2 "$ROOT/build_x11/cui_http" >/dev/null 2>&1 || true
+CUI_HTTP_DB="$GUI_DB" CUI_HTTP_TEST_MARKER="$TMPDIR_TEST/gui-marker.txt" timeout 2 "$GUI" >/dev/null 2>&1 || true
 if grep -q "theme=dark" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] theme persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] theme not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 if grep -q "lang=4" "$TMPDIR_TEST/gui-marker.txt"; then echo "  [PASS] language persisted and applied"; pass=$((pass+1)); else echo "  [FAIL] language not applied"; cat "$TMPDIR_TEST/gui-marker.txt"; fail=$((fail+1)); fi
 

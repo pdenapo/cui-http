@@ -67,7 +67,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          CMAKE_ARGS=(-S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=${{ matrix.platform }})
+          WORKSPACE="${GITHUB_WORKSPACE//\\//}"
+          CMAKE_ARGS=(-S "${WORKSPACE}" -B "${WORKSPACE}/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM="${{ matrix.platform }}")
           if [ "${{ runner.os }}" = "Windows" ]; then
             CMAKE_ARGS+=(-DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake")
           fi
@@ -75,7 +76,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build build --parallel 2
+        run: cmake --build "${GITHUB_WORKSPACE//\\//}/build" --parallel 2
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
