@@ -2,8 +2,8 @@
 
 Documentation: https://pdenapo.github.io/cui-http/
 
-A blazing-fast, lightweight, native API client (Postman/Insomnia alternative) for
-Linux. The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
+A blazing-fast, lightweight, native API client (Postman/Insomnia alternative). 
+The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
 framework; the backend is C99, handling HTTP via libcurl and persistence via
 SQLite. No web views, instant startup, tiny memory footprint.
 
