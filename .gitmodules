@@ -1,4 +1,5 @@
 [submodule "vendor/CUI"]
 	path = vendor/CUI
 	url = https://github.com/pdenapo/CUI.git
-	branch = my_version
+	branch = app-maximize
+
