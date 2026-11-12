@@ -108,8 +108,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUI_PLATFORM=glfw
 cmake --build build -j 2
 ```
 
-Do **not** use dub to build or link the backend — the whole project is now pure
-C99. CMake compiles `backend.c` directly into `cui_http` and `cui_http_cli`.
+The whole project is now pure C99. CMake compiles `backend.c` directly into `cui_http` and `cui_http_cli`.
 
 ```sh
 ./build_x11.sh            # X11 (use build_glfw.sh / build_sdl2.sh for the others)
