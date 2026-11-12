@@ -144,3 +144,10 @@ History database: `$CUI_HTTP_DB`, `--db PATH`, or the OS-conventional location
 ./tests/run_tests.sh          # 25 end-to-end checks
 cd build && ctest --output-on-failure   # via CTest (backend_unit + e2e_cli)
 ```
+
+## How to release
+
+For exmaple
+
+git tag -a v0.1.3 -m "cui-http 0.1.3"
+git push origin v0.1.3
