@@ -7,6 +7,10 @@ The frontend is C99 on top of the [CUI](https://github.com/yappologistic/CUI)
 framework; the backend is C99, handling HTTP via libcurl and persistence via
 SQLite. No web views, instant startup, tiny memory footprint.
 
+Licensed under the GNU General Public License v3.0 (see `LICENSE`).
+
+This project has been developed with the help of AI (BeamFee model) using OpenCode.
+
 ## Features
 
 - Request view: method + URL + Send bar (`cui_request_bar`), query-parameter
