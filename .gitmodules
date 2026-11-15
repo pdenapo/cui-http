@@ -1,5 +1,6 @@
 [submodule "vendor/CUI"]
 	path = vendor/CUI
-	url = https://github.com/pdenapo/CUI.git
-	branch = app-maximize
+	url = https://github.com/yappologistic/CUI.git
+	branch = master
+
 
